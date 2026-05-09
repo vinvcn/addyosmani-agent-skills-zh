@@ -17,7 +17,7 @@ Skills 会编码资深工程师构建软件时使用的工作流、质量门禁�
 
 本地化刷新遵循 [.skills/translate-skill/SKILL.md](.skills/translate-skill/SKILL.md)，只同步并翻译用户可见内容，不把本仓库当作上游 Git 镜像。
 
-- 2026-05-09: 已同步上游 `addyosmani/agent-skills@4c585c3`，本地提交仍为 `pending`。已包含完整公开 docs/setup/command metadata 的简体中文本地化。
+- 2026-05-09: 已同步上游 `addyosmani/agent-skills@4c585c3`，本地同步提交 `dbc2a47`。已包含完整公开 docs/setup/command metadata 的简体中文本地化。
 
 ---
 
