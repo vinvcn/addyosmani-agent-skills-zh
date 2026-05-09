@@ -1,0 +1,19 @@
+{
+  "name": "addy-agent-skills",
+  "owner": {
+    "name": "Addy Osmani"
+  },
+  "metadata": {
+    "description": "面向 AI coding agents 的生产级工程 skills — 覆盖从 spec 到 ship 的完整软件开发生命周期。"
+  },
+  "plugins": [
+    {
+      "name": "agent-skills",
+      "source": {
+        "source": "github",
+        "repo": "vinvcn/addyosmani-agent-skills-zh"
+      },
+      "description": "覆盖软件开发每个阶段的生产级工程 skills：spec、plan、build、verify、review 和 ship。"
+    }
+  ]
+}

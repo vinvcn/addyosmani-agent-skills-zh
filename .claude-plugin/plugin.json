@@ -1,0 +1,18 @@
+{
+  "name": "agent-skills",
+  "description": "面向 AI coding agents 的生产级工程 skills — 覆盖从 spec 到 ship 的完整软件开发生命周期。",
+  "version": "1.0.0",
+  "author": {
+    "name": "Addy Osmani"
+  },
+  "homepage": "https://github.com/vinvcn/addyosmani-agent-skills-zh",
+  "repository": "https://github.com/vinvcn/addyosmani-agent-skills-zh",
+  "license": "MIT",
+  "commands": "./.claude/commands",
+  "skills": "./skills",
+  "agents": [
+    "./agents/code-reviewer.md",
+    "./agents/security-auditor.md",
+    "./agents/test-engineer.md"
+  ]
+}

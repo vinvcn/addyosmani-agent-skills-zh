@@ -1,0 +1,18 @@
+description = "增量实现下一个任务 — build、test、verify、commit"
+
+prompt = """
+同时调用 incremental-implementation skill 和 test-driven-development。
+
+从 plan 中选择下一个 pending task。对每个 task：
+
+1. 阅读该 task 的 acceptance criteria
+2. 加载相关上下文（现有代码、patterns、types）
+3. 为预期行为编写一个失败测试（RED）
+4. 实现能让测试通过的最小代码（GREEN）
+5. 运行完整 test suite 检查 regressions
+6. 运行 build 验证 compilation
+7. 使用描述性 message 提交
+8. 标记该 task 完成并进入下一个
+
+如果任何步骤失败，遵循 debugging-and-error-recovery skill。
+"""
