@@ -4,6 +4,8 @@
 
 Skills 会编码资深工程师构建软件时使用的工作流、质量门禁和最佳实践。本包将这些流程打包，让 AI agents 在开发的每个阶段都能一致执行。
 
+本仓库是 [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) 的简体中文本地化版本。
+
 ```
   DEFINE          PLAN           BUILD          VERIFY         REVIEW          SHIP
  ┌──────┐      ┌──────┐      ┌──────┐      ┌──────┐      ┌──────┐      ┌──────┐
