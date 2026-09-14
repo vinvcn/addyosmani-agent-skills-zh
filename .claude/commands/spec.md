@@ -12,4 +12,6 @@ description: 启动 spec-driven development — 写代码前先编写结构化 s
 
 然后生成结构化 spec，覆盖六个核心领域：objective、commands、project structure、code style、testing strategy 和 boundaries。
 
+如果请求打包了多个可独立测试的 capabilities，先按该 skill 的 Phase 0 提出一份 capability map（module ids、dependency direction、build order）并获得批准，然后按 dependency 顺序为每个模块编写 spec。
+
 将 spec 保存为项目根目录中的 SPEC.md，并在继续前与用户确认。

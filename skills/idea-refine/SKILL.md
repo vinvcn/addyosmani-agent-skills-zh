@@ -1,6 +1,6 @@
 ---
 name: idea-refine
-description: 迭代打磨想法。通过结构化的发散与收敛思考打磨想法。使用 "idea-refine" 或 "ideate" 触发。
+description: 通过结构化的发散与收敛思考，把原始想法打磨成清晰、可执行的概念。用于想法还很模糊时、需要在承诺某个计划之前压力测试假设时，或想在收敛到一个方案之前先扩展选项时。触发短语为 "ideate"、"refine this idea" 或 "stress-test my plan"。
 ---
 
 # 想法打磨
@@ -19,7 +19,7 @@ description: 迭代打磨想法。通过结构化的发散与收敛思考打磨�
 
 ```bash
 # Optional: Initialize the ideas directory
-bash /mnt/skills/user/idea-refine/scripts/idea-refine.sh
+bash skills/idea-refine/scripts/idea-refine.sh
 ```
 
 **触发短语：**

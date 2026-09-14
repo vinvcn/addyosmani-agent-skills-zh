@@ -1,6 +1,6 @@
 ---
 name: shipping-and-launch
-description: 准备生产发布。用于准备部署到生产环境时；用于需要发布前检查清单、设置监控、规划分阶段发布，或需要回滚策略时。
+description: 准备生产发布。用于准备部署到生产环境，或询问发布前需要准备什么时；用于需要发布前检查清单、设置监控、规划分阶段发布，或需要回滚策略时。
 ---
 
 # 发布和上线
@@ -32,7 +32,7 @@ description: 准备生产发布。用于准备部署到生产环境时；用于�
 ### 安全
 
 - [ ] 代码或版本控制中没有 secrets
-- [ ] `npm audit` 没有 critical 或 high 漏洞
+- [ ] 生态的依赖审计（`npm audit`、`pip-audit`、`cargo audit` 等）没有 critical 或 high 漏洞
 - [ ] 所有用户可访问 endpoint 都有输入校验
 - [ ] 认证和授权检查已到位
 - [ ] 安全 header 已配置（CSP、HSTS 等）
@@ -235,6 +235,19 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 6. Confirm rollback mechanism works (dry run if possible)
 ```
 
+## Error Budget 发布门禁
+
+服务的 error budget（SLO 允许失败的请求或时间占比）决定现在发布是否安全。把它当作客观门禁，而不是谈判筹码：
+
+```
+Budget remaining > 20%  →  Ship normally; monitor closely
+Budget remaining 0–20%  →  Slow rollouts only; no high-risk changes
+Budget exhausted        →  Freeze feature work; focus entirely on reliability
+Budget resets           →  Resume normal pace; bake in the fix that recovered it
+```
+
+Canary 期间的高 burn rate（消耗预算的速度快于基线节奏）是上面发布决策阈值表中的**暂停**信号：按 error rate 升高同等处理。
+
 ## 回滚策略
 
 每次部署发生之前都需要回滚计划：
@@ -265,9 +278,11 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 ```
 ## 另请参阅
 
-- 关于发布前安全检查，见 `references/security-checklist.md`
-- 关于发布前性能检查清单，见 `references/performance-checklist.md`
-- 关于上线前可访问性验证，见 `references/accessibility-checklist.md`
+- 关于每个变更在进入本清单前都要满足的项目级 Definition of Done，见 `../../references/definition-of-done.md`
+- 关于发布前安全检查，见 `../../references/security-checklist.md`
+- 关于发布前性能检查清单，见 `../../references/performance-checklist.md`
+- 关于上线前可访问性验证，见 `../../references/accessibility-checklist.md`
+- 关于告警规则和与 SLO 绑定的阈值，见 `observability-and-instrumentation`
 
 ## 常见合理化借口
 
@@ -278,6 +293,7 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 | “监控是额外负担” | 没有监控意味着你会从用户投诉而不是 dashboard 中发现问题。 |
 | “以后再加监控” | 上线前就添加。看不见的东西无法调试。 |
 | “回滚就是承认失败” | 回滚是负责任的工程实践。发布坏功能才是失败。 |
+| “Error rate 看起来正常，继续发” | 要看 burn rate，不要只看当前 error rate。消耗预算快于基线就是暂停信号，即使各项单独阈值都是 green。 |
 
 ## 危险信号
 
@@ -288,6 +304,7 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 - 部署后第一个小时无人监控
 - 生产环境配置靠记忆完成，而不是靠代码
 - “周五下午了，发吧”
+- Error budget 已耗尽，但功能开发照常推进
 
 ## 验证
 
@@ -307,3 +324,7 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 - [ ] 关键用户流程可用
 - [ ] Logs 正常流入
 - [ ] 回滚已测试，或已验证可随时执行
+
+对每个已发布的服务：
+
+- [ ] Error budget 策略已就位：明确预算跌破 20% 以及耗尽时分别该采取什么行动

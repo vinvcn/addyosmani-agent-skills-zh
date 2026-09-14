@@ -1,6 +1,6 @@
 ---
 name: deprecation-and-migration
-description: 管理弃用和迁移。用于移除旧系统、API 或功能时；用于将用户从一种实现迁移到另一种实现时；用于判断应维护还是下线现有代码时。
+description: 管理弃用和迁移。用于移除旧系统、API 或功能时；用于将用户从一种实现迁移到另一种实现时；用于在生产环境中迁移数据库 schema（例如重命名或删除列且不停机，即 expand/contract）时；用于判断应维护还是下线现有代码时。
 ---
 
 # 弃用和迁移
@@ -161,6 +161,34 @@ function getTaskService(userId: string): TaskService {
 }
 ```
 
+### 数据库 Schema 迁移（Expand/Contract）
+
+Schema 变更是风险最高的迁移，因为数据是唯一一个无法靠回滚部署来恢复的东西。它的失败模式是把 schema 变更和代码变更耦合在一起：如果在开始使用新列名的同一个 release 里重命名列，那么在 rollout 窗口期内（新旧代码同时运行时），必然有一方在查询一个不存在的列。解法是**永远不要原地修改列**。按 additive 阶段迁移，让新旧代码在每一步都对 schema 有效。
+
+```
+EXPAND ──────────────→ MIGRATE ──────────────→ CONTRACT
+add the new column,    backfill existing rows,  once no code reads the
+nullable, alongside    dual-write old+new from  old column, drop it in
+the old one            the app                  a later, separate deploy
+```
+
+**完整示例——把 `name` 重命名为 `full_name`：**
+
+1. **Expand。** 以 nullable 方式添加 `full_name` 列。部署。（旧代码忽略它，什么都不破坏。）
+2. **Dual-write（双写）。** 应用在每次 insert/update 时同时写入 `name` 和 `full_name`。部署。
+3. **Backfill（回填）。** 分批把已有行的 `name → full_name` 复制过去，避免锁表。
+4. **Switch reads（切换读取）。** 让应用改读 `full_name`，同时保持双写。部署并观察一段时间。
+5. **Contract（收缩）。** 停止写入 `name`，然后——在一个*独立的、更晚的*部署里——删除该列。
+
+每一步都可独立部署、独立回滚：如果第 4 步出问题，回滚代码即可，`full_name` 仍在被填充。把每个阶段当作一条薄的垂直切片——参见 `incremental-implementation` skill。
+
+**规则：**
+- **先做 additive，destructive 最后且单独做。** 新增（new nullable column、新表、新索引）在任何部署中都是安全的；drop 和 rename 要在*没有任何代码引用旧结构之后*，拥有自己的独立部署。
+- **每个迁移都要有经过测试的 down path（回滚路径）。** 一个无法逆转的迁移，就是一个无法回滚的部署。合并之前先写好并运行 `down`。
+- **Backfill 要分批、避开热路径。** 对上百万行执行单条 `UPDATE` 会锁表；分块并限流。
+- **构建大索引时不要阻塞写入**（例如 Postgres 的 `CREATE INDEX CONCURRENTLY`）。
+- **当 cutover 风险高时，用 feature flag 与代码解耦**，与上面 Feature Flag Migration 模式的做法完全一致。
+
 ## Zombie Code（僵尸代码）
 
 Zombie code 指无人拥有但人人依赖的代码。它没有被主动维护，没有明确 owner，并会累积安全漏洞和兼容性问题。迹象包括：
@@ -183,6 +211,9 @@ Zombie code 指无人拥有但人人依赖的代码。它没有被主动维护�
 | “等新系统完成后再弃用它” | 弃用规划从设计阶段开始。等新系统完成时，你会有新的优先级。现在就规划。 |
 | “用户会自己迁移” | 他们不会。提供工具、文档和激励，或者自己完成迁移（The Churn Rule）。 |
 | “我们可以无限期维护两个系统” | 两个系统做同一件事，意味着维护、测试、文档和 onboarding 成本都翻倍。 |
+| “只是重命名一列，就一行代码” | Rollout 期间新旧代码同时运行，必有一方在查询一个已不存在的列。Expand/contract，永远不要原地重命名。 |
+| “我在同一个迁移里加新列并删掉旧列” | 这会把一个安全的 add 和一个 destructive 的 drop 耦合在一起。Drop 要有自己的独立部署，且发生在没有代码引用旧结构之后。 |
+| “等需要时再写回滚” | 没有 down path 的迁移，就是一个无法逆转的部署。合并之前先写好并运行 `down`。 |
 
 ## 危险信号
 
@@ -193,6 +224,9 @@ Zombie code 指无人拥有但人人依赖的代码。它没有被主动维护�
 - 给已弃用系统添加新功能（应该投入替代方案）
 - 未衡量当前使用情况就弃用
 - 未验证没有活跃消费者就移除代码
+- Schema 变更与依赖它的代码在同一个部署中发布
+- 列被原地重命名或删除，而不是走 expand/contract
+- 迁移已合并却没有经过测试的 down path，或 backfill 锁住了表
 
 ## 验证
 
@@ -204,3 +238,10 @@ Zombie code 指无人拥有但人人依赖的代码。它没有被主动维护�
 - [ ] 旧代码、测试、文档和配置已完全移除
 - [ ] 代码库中不再引用已弃用系统
 - [ ] 弃用通知已移除（它们已经完成使命）
+
+完成一次数据库 schema 迁移后：
+
+- [ ] 变更按 additive 阶段发布（expand → backfill → contract），而不是一次原地修改
+- [ ] 在每一个部署步骤中，新旧代码对 schema 都有效
+- [ ] 每个迁移都有经过测试的 down path；backfill 以限流批次运行
+- [ ] Destructive 步骤（drop/rename）在没有代码引用旧结构之后，拥有自己的独立部署

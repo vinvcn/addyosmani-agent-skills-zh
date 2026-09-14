@@ -16,8 +16,10 @@ Agent Skills 是一组按开发阶段组织的工程工作流 skills。每个 sk
 ```
 Task arrives
     │
-    ├── Vague idea/need refinement? ──→ idea-refine
+    ├── Don't know what you want yet? ──────→ interview-me
+    ├── Have a rough concept, need variants? → idea-refine
     ├── New project/feature/change? ──→ spec-driven-development
+    ├── No quality bar written down? ──→ constraint-driven-development
     ├── Have a spec, need tasks? ──────→ planning-and-task-breakdown
     ├── Implementing code? ────────────→ incremental-implementation
     │   ├── UI work? ─────────────────→ frontend-ui-engineering
@@ -29,11 +31,14 @@ Task arrives
     │   └── Browser-based? ───────────→ browser-testing-with-devtools
     ├── Something broke? ──────────────→ debugging-and-error-recovery
     ├── Reviewing code? ───────────────→ code-review-and-quality
+    │   ├── Too complex? ─────────────→ code-simplification
     │   ├── Security concerns? ───────→ security-and-hardening
     │   └── Performance concerns? ────→ performance-optimization
     ├── Committing/branching? ─────────→ git-workflow-and-versioning
     ├── CI/CD pipeline work? ──────────→ ci-cd-and-automation
+    ├── Deprecating/migrating? ────────→ deprecation-and-migration
     ├── Writing docs/ADRs? ───────────→ documentation-and-adrs
+    ├── Adding logs/metrics/alerts? ───→ observability-and-instrumentation
     └── Deploying/launching? ─────────→ shipping-and-launch
 ```
 
@@ -106,6 +111,8 @@ ASSUMPTIONS I'M MAKING:
 
 每个 skill 都包含验证步骤。验证通过之前，任务不算完成。“看起来没问题”永远不够，必须有证据（通过的测试、构建输出、运行时数据）。
 
+每个 skill 内部的验证是局部检查。而适用于*每一个*变更的项目级标准，无论当前激活的是哪个 skill，都是 Definition of Done（完成定义）：测试通过、无回归、行为已在运行时验证、文档已更新。参见 `../../references/definition-of-done.md`。它是对每个任务验收标准的补充，而不是替代。
+
 ## 需要避免的失败模式
 
 这些细微错误看起来像是在提高效率，但会制造问题：
@@ -127,7 +134,7 @@ ASSUMPTIONS I'M MAKING:
 
 2. **Skills 是工作流，不是建议。** 按顺序遵循步骤。不要跳过验证步骤。
 
-3. **多个 skills 可以同时适用。** 一个功能实现可能会按顺序涉及 `idea-refine` → `spec-driven-development` → `planning-and-task-breakdown` → `incremental-implementation` → `test-driven-development` → `code-review-and-quality` → `shipping-and-launch`。
+3. **多个 skills 可以同时适用。** 一个功能实现可能会按顺序涉及 `idea-refine` → `spec-driven-development` → `planning-and-task-breakdown` → `incremental-implementation` → `test-driven-development` → `code-review-and-quality` → `code-simplification` → `shipping-and-launch`。
 
 4. **拿不准时，从 spec 开始。** 如果任务不平凡且没有 spec，就从 `spec-driven-development` 开始。
 
@@ -136,18 +143,22 @@ ASSUMPTIONS I'M MAKING:
 对于完整功能，典型 skill 顺序是：
 
 ```
-1.  idea-refine                 → Refine vague ideas
-2.  spec-driven-development     → Define what we're building
-3.  planning-and-task-breakdown → Break into verifiable chunks
-4.  context-engineering         → Load the right context
-5.  source-driven-development   → Verify against official docs
-6.  incremental-implementation  → Build slice by slice
-7.  doubt-driven-development    → Cross-examine non-trivial decisions in-flight
-8.  test-driven-development     → Prove each slice works
-9.  code-review-and-quality     → Review before merge
-10. git-workflow-and-versioning → Clean commit history
-11. documentation-and-adrs      → Document decisions
-12. shipping-and-launch         → Deploy safely
+1.  interview-me                → Extract what the user actually wants
+2.  idea-refine                 → Refine vague ideas
+3.  spec-driven-development     → Define what we're building
+4.  planning-and-task-breakdown → Break into verifiable chunks
+5.  context-engineering         → Load the right context
+6.  source-driven-development   → Verify against official docs
+7.  incremental-implementation  → Build slice by slice
+8.  observability-and-instrumentation → Instrument as you build (runs parallel with 7-9, not after)
+9.  doubt-driven-development    → Cross-examine non-trivial decisions in-flight
+10. test-driven-development     → Prove each slice works
+11. code-review-and-quality     → Review before merge
+12. code-simplification         → Reduce unnecessary complexity while preserving behavior
+13. git-workflow-and-versioning → Clean commit history
+14. documentation-and-adrs      → Document decisions
+15. deprecation-and-migration   → Retire old systems and move users safely when needed
+16. shipping-and-launch         → Deploy safely
 ```
 
 并不是每个任务都需要每个 skill。一个 bug 修复可能只需要：`debugging-and-error-recovery` → `test-driven-development` → `code-review-and-quality`。
@@ -156,6 +167,7 @@ ASSUMPTIONS I'M MAKING:
 
 | 阶段 | Skill | 一句话摘要 |
 |-------|-------|-----------------|
+| 定义 | interview-me | 在任何计划、spec 或代码存在之前，先弄清楚用户真正想要什么 |
 | 定义 | idea-refine | 通过结构化的发散和收敛思考打磨想法 |
 | 定义 | spec-driven-development | 在写代码前明确需求和验收标准 |
 | 计划 | planning-and-task-breakdown | 拆解为小而可验证的任务 |
@@ -169,9 +181,12 @@ ASSUMPTIONS I'M MAKING:
 | 验证 | browser-testing-with-devtools | 使用 Chrome DevTools MCP 做运行时验证 |
 | 验证 | debugging-and-error-recovery | 复现 → 定位 → 修复 → 加保护 |
 | 评审 | code-review-and-quality | 基于五个维度和质量门禁进行评审 |
+| 评审 | code-simplification | 在保持行为不变的前提下减少不必要的复杂度 |
 | 评审 | security-and-hardening | OWASP 防护、输入验证、最小权限 |
 | 评审 | performance-optimization | 先测量，只优化重要内容 |
 | 发布 | git-workflow-and-versioning | 原子提交、干净历史 |
 | 发布 | ci-cd-and-automation | 每次变更都运行自动化质量门禁 |
+| 发布 | deprecation-and-migration | 移除旧系统并安全地迁移用户 |
 | 发布 | documentation-and-adrs | 记录为什么，而不只是记录做了什么 |
+| 发布 | observability-and-instrumentation | 结构化日志、RED 指标、traces、基于症状的告警 |
 | 发布 | shipping-and-launch | 发布前检查清单、监控、回滚计划 |

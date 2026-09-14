@@ -1,6 +1,6 @@
 ---
 name: git-workflow-and-versioning
-description: 规范 git 工作流实践。用于进行任何代码变更时；用于提交、分支、解决冲突，或需要组织多个并行工作流时。
+description: 规范 git 工作流实践。用于进行任何代码变更时；用于提交、分支、解决冲突、把混乱 working tree 里未提交的工作拆成干净的 atomic commits、创建或审查 pull request（PR）、推送到远程，或需要组织多个并行工作流时。用于裁剪 release、选择语义化版本递增、打标签或编写 changelog 时。
 ---
 
 # Git 工作流和版本管理
@@ -267,6 +267,49 @@ git blame src/services/task.ts
 git log --grep="validation" --oneline
 ```
 
+## 发布与版本管理
+
+Commits 是*你*追踪变更的方式；**version** 则是你的*使用者*追踪它的方式。从有别的东西依赖你的代码那一刻起（另一个团队、一个已发布的包、一个已部署的客户端），"latest on main" 就不再是"我跑的是什么版本，升级安全吗"这个问题的合格答案。版本号和 changelog 就是回答这个问题的契约。
+
+### 语义化版本（Semantic Versioning）
+
+对任何有使用者的东西，按 `MAJOR.MINOR.PATCH` 版本化，并让数字承载含义：
+
+```
+  MAJOR  breaking change — consumers must change their code to upgrade
+  MINOR  new functionality, backward-compatible — safe to upgrade
+  PATCH  bug fix, backward-compatible — safe to upgrade
+```
+
+数字是一个承诺，所以让代码配得上它。一个改变了使用者依赖行为的 "patch"，就是一个伪装成补丁的 major change（Hyrum's Law，见 `api-and-interface-design` skill）。拿不准某个变更是否 breaking 时，就当它是；一个意外的 major 远比一个崩坏的使用者便宜。
+
+### 给 release 打 tag，并让 tag 成为唯一事实来源
+
+Release 是历史中的一个不可变点，不是移动的分支。给它打 tag，让它永远可以被复现：
+
+```bash
+git tag -a v1.4.0 -m "Release 1.4.0"
+git push origin v1.4.0
+```
+
+从 tag 派生版本号，而不是在散落的文件里手动编辑，这样构建产物、tag 和 changelog 三者永远不会互相矛盾。
+
+### 维护写给人类看的 changelog
+
+Changelog 不是 `git log`。它是经过整理的、面向使用者的答案，回答"改了什么，我在乎吗"：按 `Added / Changed / Fixed / Deprecated / Removed / Security` 分组，最新的在顶部，每个条目围绕用户影响而非内部机制来措辞。
+
+```markdown
+## [1.4.0] - 2025-06-12
+### Added
+- Bulk task import via CSV
+### Fixed
+- Timezone drift in recurring task due dates
+### Deprecated
+- `GET /v1/tasks/all` — use the paginated `GET /v1/tasks` (removal in 2.0)
+```
+
+在做变更的同一个变更里写好对应条目，趁影响还清晰时记录，而不是在发布时从 commit 考古中重建。Breaking changes 要有迁移说明和弃用窗口（遵循 `deprecation-and-migration` skill）；真正执行发布是 `shipping-and-launch` skill 的职责，本节是喂给它的版本化契约。
+
 ## 常见合理化借口
 
 | 合理化借口 | 现实 |
@@ -277,6 +320,9 @@ git log --grep="validation" --oneline
 | “分支增加开销” | 短生命周期分支几乎没有成本，并能防止并行工作互相冲撞。长期分支才是问题，应在 1-3 天内合并。 |
 | “以后再拆这个变更” | 大变更更难审查、部署风险更高，也更难回滚。提交前拆分，而不是提交后。 |
 | “我不需要 .gitignore” | 直到带生产 secrets 的 `.env` 被 commit。立刻设置它。 |
+| “只是个小修复，patch 加一就行” | 先看看使用者能观察到什么。他们依赖的行为变化就是 major，不管 diff 多小。 |
+| “changelog 就是 commit log” | Commits 是写给你的；changelog 是写给使用者的，要按影响整理。用原始 commits 生成的 changelog 会淹没重点。 |
+| “发布时再补 changelog” | 到那时影响只能凭记忆重建，而且一半都丢了。变更和条目要一起写。 |
 
 ## 危险信号
 
@@ -287,6 +333,9 @@ git log --grep="validation" --oneline
 - Commit 了 `node_modules/`, `.env` 或 build artifacts
 - 长期分支与 main 显著分叉
 - Force-pushing 到共享分支
+- Breaking change 藏在 minor 或 patch 版本递增下发布
+- Release 没有 tag，或版本号手动编辑到与 tag 不同步
+- 面向用户的 release 没有 changelog 条目，或 changelog 只是把 commit messages 倾倒进去
 
 ## 验证
 
@@ -298,3 +347,9 @@ git log --grep="validation" --oneline
 - [ ] Diff 中没有 secrets
 - [ ] 没有把纯格式变更混入行为变更
 - [ ] `.gitignore` 覆盖标准排除项
+
+对每个 release（任何有使用者的东西）：
+
+- [ ] 版本递增与变更匹配：breaking → major，additive → minor，fix → patch
+- [ ] Release 已打 tag，且版本号从 tag 派生，而不是手动编辑到不同步
+- [ ] Changelog 中为此版本有按影响分组的、经过整理的、人类可读的条目

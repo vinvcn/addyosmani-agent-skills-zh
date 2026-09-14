@@ -1,6 +1,6 @@
 ---
 name: incremental-implementation
-description: 以增量方式交付变更。用于实现任何触及多个文件的功能或变更。用于你即将一次写大量代码，或任务太大无法一步落地时。
+description: 以薄而可验证的切片增量交付变更。用于实现任何触及多个文件的功能或变更，或接手计划中的下一个任务时。用于在 feature flag 后滚动发布变更、即将一次写大量代码，或任务太大无法一步落地时。
 ---
 
 # Incremental Implementation
@@ -63,7 +63,7 @@ Slice 4: Delete a task (delete + API + UI + confirmation)
 
 每个切片都交付可工作的端到端功能。
 
-### Contract-First Slicing
+### 契约优先切片
 
 当后端和前端需要并行开发时：
 
@@ -74,7 +74,7 @@ Slice 1b: Implement frontend against mock data matching the contract
 Slice 2: Integrate and test end-to-end
 ```
 
-### Risk-First Slicing
+### 风险优先切片
 
 先处理风险最高或最不确定的部分：
 
@@ -190,21 +190,21 @@ export function createTask(data: TaskInput, options?: { notify?: boolean }) {
 Start with just the database schema change and the API endpoint.
 Don't touch the UI yet — we'll do that in the next increment.
 
-After implementing, run `npm test` and `npm run build` to verify
-nothing is broken."
+After implementing, run the repository's test and build commands to
+verify nothing is broken."
 ```
 
 明确说明每个增量的范围内是什么，范围外是什么。
 
 ## 增量检查清单
 
-每个增量后，验证：
+每个增量后，用仓库自己的命令验证（见 test-driven-development skill 的 Discover the Stack First 部分）：
 
 - [ ] 变更只做一件事，并且完整完成
-- [ ] 所有现有测试仍然通过（`npm test`）
-- [ ] 构建成功（`npm run build`）
-- [ ] 类型检查通过（`npx tsc --noEmit`）
-- [ ] lint 通过（`npm run lint`）
+- [ ] 所有现有测试仍然通过（仓库的测试命令：`npm test`、`./gradlew test`、`pytest` 等）
+- [ ] 构建成功（仓库的构建命令）
+- [ ] 类型检查通过，如果该技术栈有类型检查（`npx tsc --noEmit`、`mypy` 等）
+- [ ] lint 通过（仓库的 lint 命令）
 - [ ] 新功能按预期工作
 - [ ] 变更已用描述性消息提交
 
@@ -243,3 +243,7 @@ nothing is broken."
 - [ ] 构建干净
 - [ ] 功能按 spec 端到端工作
 - [ ] 没有未提交变更
+
+## 另见
+
+每个增量的验证只是本地检查。在宣布任务完成之前，把项目级 Definition of Done 作为最终闸门应用。它是无论任务如何、每个增量都要越过的既定标准。见 `../../references/definition-of-done.md`。

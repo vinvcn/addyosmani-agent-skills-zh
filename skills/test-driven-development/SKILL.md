@@ -1,6 +1,6 @@
 ---
 name: test-driven-development
-description: 用测试驱动开发。用于实现任何逻辑、修复任何 bug，或改变任何行为。用于需要证明代码能工作、收到 bug 报告，或即将修改现有功能时。
+description: 通过 red-green-refactor 循环用测试驱动开发。用于实现任何逻辑、修复任何 bug，或改变任何行为。用于需要证明代码能工作、收到 bug 报告，或即将修改现有功能时。
 ---
 
 # Test-Driven Development
@@ -20,6 +20,20 @@ description: 用测试驱动开发。用于实现任何逻辑、修复任何 bug
 **何时不要使用：** 纯配置变更、文档更新，或没有行为影响的静态内容变更。
 
 **相关：** 对基于浏览器的变更，将 TDD 与使用 Chrome DevTools MCP 的运行时验证结合使用。见下方 Browser Testing 部分。
+
+## 先发现技术栈
+
+TDD 循环是通用的；命令不是。在写第一个测试之前，先弄清楚*这个*仓库是怎么测试的，并在每个 RED、GREEN 和验证步骤使用它自己的命令：
+
+- **语言与构建系统** —— `package.json`、`pom.xml`/`build.gradle`、`pyproject.toml`、`go.mod`、`Cargo.toml`、`Gemfile`、`Makefile`
+- **仓库内置的 wrapper** —— 优先用 `./gradlew`、`./mvnw`、`make test` 或仓库脚本，而不是全局安装的工具
+- **测试框架与配置** —— 以及它如何运行单个聚焦测试 vs 完整套件
+- **现有约定** —— 测试放在哪里、文件怎么命名、相邻测试遵循什么模式
+- **已记录的命令** —— README、CONTRIBUTING 和 CI workflows 展示的是真正把关合并的命令
+
+在循环中运行仓库的聚焦测试命令，在完成前运行它的完整套件命令。绝不要假设 `npm test` 这类默认值；Gradle、Cargo 或 pytest 项目都有各自的等价命令。
+
+下面的示例用 TypeScript 演示；一旦你发现了项目自己的工具链，这个工作流在任何语言里都完全相同。
 
 ## TDD 循环
 
@@ -144,7 +158,7 @@ export async function completeTask(id: string): Promise<Task> {
  ╱──────────────────╲
 ```
 
-**测试所有权规则：** 如果一个行为重要到你依赖它，就应该为它写测试。基础设施变更、重构和迁移不负责替你抓 bug；你的测试才负责。如果一次变更破坏了你的代码，而你没有测试覆盖它，责任在你。
+**The Beyonce Rule：** 你依赖什么，就应该给什么写测试。基础设施变更、重构和迁移不负责替你抓 bug，你的测试才负责。如果一次变更破坏了你的代码，而你恰好没有为它写测试，那责任在你。
 
 ### 测试大小（资源模型）
 
@@ -249,7 +263,7 @@ it('marks overdue tasks when deadline has passed', () => {
 });
 ```
 
-### 每个测试验证一个概念
+### 每个概念一个断言
 
 ```typescript
 // Good: Each test verifies one behavior
@@ -344,7 +358,7 @@ then verifies the test passes.
 
 ## 另见
 
-跨框架的详细测试模式、示例和反模式见 `references/testing-patterns.md`。
+想通过 JavaScript/TypeScript 测试模式来理解上述原则（Jest、React Testing Library、Supertest、Playwright），见 `../../references/testing-patterns.md`。原则适用于任何生态；但那里的语法和工具是 JS/TS 专属的。
 
 ## 常见合理化借口
 
@@ -361,6 +375,7 @@ then verifies the test passes.
 ## 红旗
 
 - 写代码却没有对应测试
+- 不去确认仓库实际使用什么命令，就直接拿默认测试命令（`npm test`）来用
 - 测试第一次运行就通过（它们可能没有测试你以为的东西）
 - “All tests pass”，但实际上没有运行任何测试
 - bug 修复没有复现测试
@@ -374,10 +389,10 @@ then verifies the test passes.
 完成任何实现后：
 
 - [ ] 每个新行为都有对应测试
-- [ ] 所有测试通过：`npm test`
+- [ ] 完整套件通过，使用仓库自己的测试命令运行（`npm test`、`./gradlew test`、`pytest`、`go test ./...` 等）
 - [ ] bug 修复包含一个修复前会失败的复现测试
 - [ ] 测试名称描述被验证的行为
 - [ ] 没有测试被跳过或禁用
 - [ ] 覆盖率没有下降（如果跟踪覆盖率）
 
-**注意：** 每次会影响测试结果的变更后，运行对应测试命令。一次干净运行后，除非代码发生变化，否则不要重复同一个命令；在未变更代码上重复运行不会增加信心。
+**注意：** 每次会影响结果的变更后，运行对应测试命令。一次干净运行后，除非代码发生变化，否则不要重复同一个命令；在未变更代码上重复运行不会增加信心。

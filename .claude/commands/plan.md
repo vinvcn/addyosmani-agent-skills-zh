@@ -14,3 +14,5 @@ description: 将工作拆解为带 acceptance criteria 和 dependency ordering �
 6. 将 plan 提交给人类 review
 
 将 plan 保存到 tasks/plan.md，将 task list 保存到 tasks/todo.md。
+
+如果 tasks/plan.md 或 tasks/todo.md 已经存在，且其中带有针对另一项工作的未完成 tasks，停止并在写入前询问 — 绝不静默覆盖一份未完成的 plan。
