@@ -1,6 +1,6 @@
 {
   "name": "agent-skills",
-  "version": "1.1.0",
+  "version": "0.6.9",
   "description": "面向 AI coding agents 的生产级工程 skills，覆盖从 spec 到 ship 的完整软件开发生命周期。",
   "author": {
     "name": "Addy Osmani",

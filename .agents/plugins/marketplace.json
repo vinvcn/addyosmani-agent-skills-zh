@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "agent-skills",
-      "version": "1.1.0",
+      "version": "0.6.9",
       "description": "覆盖软件开发每个阶段的生产级工程 skills：spec、plan、build、verify、review 和 ship。",
       "source": {
         "source": "local",
