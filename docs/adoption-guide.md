@@ -2,7 +2,7 @@
 
 如何引入 agent-skills，很大程度上取决于你的代码库处于生命周期的哪个阶段。一个全新项目（greenfield）可以从第一次提交开始就采用完整的生命周期。而一个有多年历史的代码库则需要一条渐进式的道路，要尊重已经存在的东西：它的约定、它未被记录的决策，以及那些你在没有测试覆盖的地方不敢盲目触碰的角落。
 
-本指南覆盖这两条路径。安装机制参见 [getting-started.md](getting-started.md) 和各工具的 setup 指南。每个 skill 做什么，参见 [README 中的 skill catalog](../README.md#all-24-skills)。
+本指南覆盖这两条路径。安装机制参见 [getting-started.md](getting-started.md) 和各工具的 setup 指南。每个 skill 做什么，参见 [README 中的 skill catalog](../README.md#全部-24-个-skills)。
 
 ---
 
@@ -43,7 +43,7 @@
 /ship   →  when going live     (shipping-and-launch)
 ```
 
-`/build auto` 很适合全新项目：你只需批准一次 plan，每个 task 依然会走 test-driven 并单独提交。spec 和 plan 产物（`SPEC.md`、`tasks/`）是活文档，工作进行期间要把它们纳入版本控制。如果功能横跨多个 session，这些文件同时也是交接文档，参见 [working across sessions](getting-started.md#working-across-sessions)。
+`/build auto` 很适合全新项目：你只需批准一次 plan，每个 task 依然会走 test-driven 并单独提交。spec 和 plan 产物（`SPEC.md`、`tasks/`）是活文档，工作进行期间要把它们纳入版本控制。如果功能横跨多个 session，这些文件同时也是交接文档，参见 [working across sessions](getting-started.md#跨-session-工作)。
 
 ### 从一开始就按“常驻”对待这些
 

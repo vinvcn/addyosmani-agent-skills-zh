@@ -85,7 +85,7 @@ OpenCode 不支持 `/spec` 或 `/plan` 这样的 slash commands。
 
 ## 创建新 Skill
 
-> **开始之前：** 先运行 [CONTRIBUTING.md](CONTRIBUTING.md#before-proposing-a-new-skill) 中的预检：搜索目录、检查 open PRs（`gh pr list --state open`）、确认想法符合 [docs/skill-anatomy.md](docs/skill-anatomy.md)，并在 PR 描述中论证这个缺口。大多数新 skill 想法都与某个现有 skill 或某个 open PR 重叠；能扩展现有 skill，就优先于新增一个近似重复的 skill。CONTRIBUTING.md 是这套工作流的唯一权威来源。
+> **开始之前：** 先运行 [CONTRIBUTING.md](CONTRIBUTING.md#提出新-skill-之前) 中的预检：搜索目录、检查 open PRs（`gh pr list --state open`）、确认想法符合 [docs/skill-anatomy.md](docs/skill-anatomy.md)，并在 PR 描述中论证这个缺口。大多数新 skill 想法都与某个现有 skill 或某个 open PR 重叠；能扩展现有 skill，就优先于新增一个近似重复的 skill。CONTRIBUTING.md 是这套工作流的唯一权威来源。
 
 本仓库的 skills 以 markdown 为主：每个 skill 位于 `skills/<kebab-case-name>/SKILL.md`，带 YAML frontmatter（`name`、`description`），并遵循 section anatomy（Overview、When to Use、Process、Common Rationalizations、Red Flags、Verification）。只有当 skill 附带可运行的 helpers 时才添加 `scripts/` 目录；大多数 skills 只有 markdown，也没有按 skill 打包的 zip 包。
 

@@ -115,7 +115,7 @@ claude --plugin-dir /path/to/agent-skills
 <details>
 <summary><b>Antigravity CLI</b></summary>
 
-作为原生 plugin 安装以获得 skills 和 subagents。在受影响的 Antigravity CLI 版本中，旧的 command TOMLs 会被报告为已转换，但其 wrapper commands 不可发现；请直接调用底层的 namespaced skills。参见 [docs/antigravity-setup.md](docs/antigravity-setup.md#lifecycle-workflows-and-command-compatibility)。
+作为原生 plugin 安装以获得 skills 和 subagents。在受影响的 Antigravity CLI 版本中，旧的 command TOMLs 会被报告为已转换，但其 wrapper commands 不可发现；请直接调用底层的 namespaced skills。参见 [docs/antigravity-setup.md](docs/antigravity-setup.md#lifecycle-workflows-与-command-兼容性)。
 
 **从仓库安装：**
 
@@ -365,7 +365,7 @@ Skills 在需要时会拉取的快速参考材料：
 | 共享 review 材料 | `agents/`（4 个 personas）、`references/`（7 个 checklists） | specialist reviewers 和整仓库安装携带的包级 checklists |
 | Claude Code 适配器 | `.claude/commands/`（9 个命令）、`.claude-plugin/`、`hooks/` | Slash-command wrappers、marketplace metadata 和 lifecycle hooks |
 | Gemini CLI 适配器 | `.gemini/commands/`（9 个命令） | Gemini 原生 TOML command wrappers |
-| Antigravity CLI 适配器 | `commands/`（9 个命令）、`plugin.json` | 旧版 TOML wrappers 和根级 plugin manifest；见[已知 wrapper 限制](docs/antigravity-setup.md#lifecycle-workflows-and-command-compatibility) |
+| Antigravity CLI 适配器 | `commands/`（9 个命令）、`plugin.json` | 旧版 TOML wrappers 和根级 plugin manifest；见[已知 wrapper 限制](docs/antigravity-setup.md#lifecycle-workflows-与-command-兼容性) |
 | Codex 适配器 | `.codex-plugin/`、`.agents/plugins/` | Codex plugin metadata 和 marketplace 注册；Codex 直接消费 `skills/` |
 | GitHub Copilot CLI 适配器 | `plugin.json` | 根级 plugin metadata；Copilot CLI 按约定发现 `skills/`，不注册 lifecycle wrappers |
 | 贡献者工具 | `scripts/`（13 个脚本）、`evals/`（25 个 case 文件）、`.github/workflows/` | 校验、路由 evals 和 CI |

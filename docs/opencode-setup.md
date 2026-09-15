@@ -133,7 +133,7 @@ For every request:
 
 把它保存为你项目根目录的 `AGENTS.md`。OpenCode 会自动加载。
 
-> **注意：** `addyosmani/agent-skills` 仓库内的根 `AGENTS.md` 面向在本仓库工作的贡献者，不应复制到其它项目。参见 [CONTRIBUTING.md](../CONTRIBUTING.md#repo-scoped-files)。
+> **注意：** `addyosmani/agent-skills` 仓库内的根 `AGENTS.md` 面向在本仓库工作的贡献者，不应复制到其它项目。参见 [CONTRIBUTING.md](../CONTRIBUTING.md#仓库级文件)。
 
 ## 工作方式
 

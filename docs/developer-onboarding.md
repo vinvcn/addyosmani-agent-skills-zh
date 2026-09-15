@@ -83,15 +83,15 @@ bash hooks/session-start-test.sh
 
 ### 路径 2：提议新 skill（门槛更高，先做预检）
 
-目录已经覆盖了生命周期的大部分，所以举证责任在「缺口」上。写任何东西之前，先跑 [CONTRIBUTING.md](../CONTRIBUTING.md#before-proposing-a-new-skill) 里的预检：搜索目录、检查 open PRs（`gh pr list --state open`；近似重复的簇已经存在）、确认想法符合 [skill-anatomy.md](skill-anatomy.md)，并在 PR 描述中明确论证这个缺口。如果它与某个现有 skill 重叠，对该 skill 做一次聚焦的编辑胜过一个新目录。
+目录已经覆盖了生命周期的大部分，所以举证责任在「缺口」上。写任何东西之前，先跑 [CONTRIBUTING.md](../CONTRIBUTING.md#提出新-skill-之前) 里的预检：搜索目录、检查 open PRs（`gh pr list --state open`；近似重复的簇已经存在）、确认想法符合 [skill-anatomy.md](skill-anatomy.md)，并在 PR 描述中明确论证这个缺口。如果它与某个现有 skill 重叠，对该 skill 做一次聚焦的编辑胜过一个新目录。
 
-新 skill 是以一组文件交付的，不是单个文件：`skills/<kebab-case-name>/SKILL.md`、一个配套的 `evals/cases/<name>.json`，以及只有在确实附带可运行 helper 时才有的 `scripts/` 目录（参考材料放 `references/`，绝不放在 skill 内部）。精确的 frontmatter 规则、章节解剖和 eval-case 最低要求，在 [CONTRIBUTING.md](../CONTRIBUTING.md#structure) 和 [skill-anatomy.md](skill-anatomy.md) 里；以那两处为准而不是这份巡览，这样两边才不会漂移。
+新 skill 是以一组文件交付的，不是单个文件：`skills/<kebab-case-name>/SKILL.md`、一个配套的 `evals/cases/<name>.json`，以及只有在确实附带可运行 helper 时才有的 `scripts/` 目录（参考材料放 `references/`，绝不放在 skill 内部）。精确的 frontmatter 规则、章节解剖和 eval-case 最低要求，在 [CONTRIBUTING.md](../CONTRIBUTING.md#结构) 和 [skill-anatomy.md](skill-anatomy.md) 里；以那两处为准而不是这份巡览，这样两边才不会漂移。
 
 有一点值得内化而不是现查：写 trigger prompts 时，要用用户实际说话的措辞去转述；把 description 复制进 prompts 是在糊弄 eval，什么也告诉不了你。
 
 ### 路径 3：文档、references、harness
 
-- 文档和 skills **只有英文**；翻译不被接受，因为它们会漂移（[CONTRIBUTING.md](../CONTRIBUTING.md#translations) 有理由说明）。
+- 文档和 skills **只有英文**；翻译不被接受，因为它们会漂移（[CONTRIBUTING.md](../CONTRIBUTING.md#翻译) 有理由说明）。
 - 对 `scripts/run-evals.js` 或 eval schema 的改动，应与 skill-creator 的 `evals.json` schema 保持兼容（行为层级逐字采用了该 schema；这种兼容性是设计特性，不是巧合）。
 - 任何涉及 session-start hook 或其内嵌 meta-skill 的改动，都需要跑 hook 回归测试（§3）。
 
