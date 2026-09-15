@@ -1,31 +1,31 @@
 ---
 name: performance-optimization
-description: 优化应用性能。用于存在性能要求、怀疑性能回归，或 Core Web Vitals / 加载时间需要改进时；用于 profiling 发现需要修复的瓶颈时。
+description: 优化应用的前端、后端、查询和数据库性能。当存在性能要求、怀疑出现性能回归、Core Web Vitals 或加载时间需要改进、需要修复 N+1 查询模式，或 profiling 暴露出瓶颈时使用。
 ---
 
 # 性能优化
 
 ## 概览
 
-优化前先测量。没有测量的性能工作就是猜测，而猜测会导致过早优化：增加复杂度，却没有改善真正重要的东西。先 profile，识别真实瓶颈，修复它，再次测量。只优化测量证明重要的东西。
+先测量，再优化。没有测量的性能工作就是猜测 —— 而猜测会导致过早优化，增加复杂度却没改善真正要紧的东西。先 profile，找到真正的瓶颈，修复它，再测一遍。只优化被测量证明要紧的部分。
 
 ## 何时使用
 
-- Spec 中存在性能要求（加载时间预算、响应时间 SLA）
-- 用户或监控报告行为缓慢
+- spec 中有性能要求（加载时间预算、响应时间 SLA）
+- 用户或监控报告了卡顿
 - Core Web Vitals 分数低于阈值
-- 你怀疑某个变更引入了回归
-- 构建需要处理大数据集或高流量的功能
+- 你怀疑某次变更引入了回归
+- 构建处理大数据集或高流量的功能
 
-**不应使用的情况：** 在有问题证据之前不要优化。过早优化增加的复杂度，成本通常超过它带来的性能收益。
+**何时不用：** 在没有问题证据之前不要优化。过早优化带来的复杂度，比它换来的性能更贵。
 
 ## Core Web Vitals 目标
 
 | 指标 | Good | Needs Improvement | Poor |
 |--------|------|-------------------|------|
-| **LCP** (Largest Contentful Paint) | ≤ 2.5s | ≤ 4.0s | > 4.0s |
-| **INP** (Interaction to Next Paint) | ≤ 200ms | ≤ 500ms | > 500ms |
-| **CLS** (Cumulative Layout Shift) | ≤ 0.1 | ≤ 0.25 | > 0.25 |
+| **LCP**（Largest Contentful Paint） | ≤ 2.5s | ≤ 4.0s | > 4.0s |
+| **INP**（Interaction to Next Paint） | ≤ 200ms | ≤ 500ms | > 500ms |
+| **CLS**（Cumulative Layout Shift） | ≤ 0.1 | ≤ 0.25 | > 0.25 |
 
 ## 优化工作流
 
@@ -33,16 +33,16 @@ description: 优化应用性能。用于存在性能要求、怀疑性能回归�
 1. MEASURE  → Establish baseline with real data
 2. IDENTIFY → Find the actual bottleneck (not assumed)
 3. FIX      → Address the specific bottleneck
-4. VERIFY   → Measure again, confirm improvement
+4. VERIFY   → Measure again; keep or revert
 5. GUARD    → Add monitoring or tests to prevent regression
 ```
 
 ### 步骤 1: 测量
 
-两种互补方法，两者都要使用：
+两种互补的方法 —— 都要用：
 
-- **Synthetic（Lighthouse、DevTools Performance tab）：** 条件可控、可复现。最适合 CI 回归检测和隔离具体问题。
-- **RUM（web-vitals library、CrUX）：** 真实条件下的真实用户数据。用于验证修复是否真的改善了用户体验。
+- **Synthetic（Lighthouse、DevTools Performance 标签页）：** 条件受控、可复现。最适合 CI 回归检测和隔离具体问题。
+- **RUM（web-vitals library、CrUX）：** 真实条件下的真实用户数据。要验证一次修复确实改善了用户体验，这是必需的。
 
 **前端：**
 ```bash
@@ -72,7 +72,7 @@ console.timeEnd('db-query');
 
 ### 从哪里开始测量
 
-根据症状决定先测什么：
+用症状来决定先测什么：
 
 ```
 What is slow?
@@ -98,25 +98,25 @@ What is slow?
 
 ### 步骤 2: 识别瓶颈
 
-按类别列出的常见瓶颈：
+按类别划分的常见瓶颈：
 
 **前端：**
 
-| 症状 | 可能原因 | 排查方式 |
+| 症状 | 可能原因 | 排查方向 |
 |---------|-------------|---------------|
-| Slow LCP | 大图片、render-blocking resources、慢 server | 检查 network waterfall、图片尺寸 |
-| High CLS | 图片没有尺寸、内容晚加载、字体偏移 | 检查 layout shift attribution |
-| Poor INP | 主线程 JavaScript 过重、大型 DOM 更新 | 检查 Performance trace 中的 long tasks |
-| Slow initial load | Bundle 过大、网络请求过多 | 检查 bundle size、code splitting |
+| LCP 慢 | 图片过大、render-blocking 资源、服务器慢 | 查看 network waterfall、图片尺寸 |
+| CLS 高 | 图片没有尺寸、晚加载的内容、字体偏移 | 查看 layout shift 归因 |
+| INP 差 | 主线程上过重的 JavaScript、大型 DOM 更新 | 在 Performance trace 中查看 long tasks |
+| 首次加载慢 | bundle 过大、网络请求过多 | 检查 bundle size、code splitting |
 
 **后端：**
 
-| 症状 | 可能原因 | 排查方式 |
+| 症状 | 可能原因 | 排查方向 |
 |---------|-------------|---------------|
-| Slow API responses | N+1 queries、缺少索引、未优化查询 | 检查 database query log |
-| Memory growth | 泄漏引用、无界缓存、大 payload | Heap snapshot analysis |
-| CPU spikes | 同步重计算、regex backtracking | CPU profiling |
-| High latency | 缺少缓存、重复计算、network hops | Trace requests through the stack |
+| API 响应慢 | N+1 查询、缺失索引、未优化的查询 | 查看数据库查询日志 |
+| 内存增长 | 泄漏的引用、无界缓存、大 payload | Heap snapshot 分析 |
+| CPU 尖峰 | 同步的重计算、正则回溯 | CPU profiling |
+| 高延迟 | 缺少缓存、冗余计算、网络跳数 | 沿调用栈 trace 请求 |
 
 ### 步骤 3: 修复常见反模式
 
@@ -135,7 +135,7 @@ const tasks = await db.tasks.findMany({
 });
 ```
 
-#### 无界数据获取
+#### Unbounded Data Fetching
 
 ```typescript
 // BAD: Fetching all records
@@ -149,7 +149,59 @@ const tasks = await db.tasks.findMany({
 });
 ```
 
-#### 缺少图片优化（前端）
+#### Queries That Ignore Their Index
+
+"加个索引"是猜测。查询计划才是测量：
+
+```sql
+EXPLAIN ANALYZE
+SELECT id, title FROM tasks
+WHERE owner_id = 42 ORDER BY created_at DESC LIMIT 20;
+```
+
+输出里的三样东西决定怎么修：
+
+| 你看到什么 | 它意味着什么 |
+|---|---|
+| 在你预期有索引的大表上出现 `Seq Scan` | 这个谓词没有可用的索引 |
+| 估算的 `rows=` 与实际相差一个数量级 | 统计信息过期；planner 基于错误信息做选择 |
+| scan 之上有一个 `Sort` 节点 | 索引覆盖了过滤条件，但没覆盖 `ORDER BY` |
+
+按**查询的形状**建索引，而不是孤立地看某一列。在复合索引里，等值列在前，范围或排序列在后：
+
+```sql
+CREATE INDEX idx_tasks_owner_created ON tasks (owner_id, created_at DESC);
+```
+
+**索引帮不上忙的情况：**
+
+| 情形 | 原因 |
+|---|---|
+| 低选择性，查询占主导的值（一个 95% 都是 `active` 的 `status` 列，且过滤条件就是 `active`） | 顺序扫描确实更便宜，planner 会忽略索引。反过来，过滤罕见值时结论相反，此时 partial index 非常合适 |
+| 前导通配符（`LIKE '%term'`） | B-tree 没有前缀就无法 seek；需要 trigram 或 full-text |
+| 列上有函数（`WHERE lower(email) = ?`） | 普通列索引不可用；改为对该表达式建索引 |
+| 写多的表 | 每个索引都是对每次 `INSERT`/`UPDATE` 的抽税；要测写入成本，不能只看读取收益 |
+
+之后重跑一次 `EXPLAIN ANALYZE`。一个没改变执行计划的索引应当 revert（Step 4），而且它并不免费：每次写入它都在付出成本。
+
+#### Connection Pool Exhaustion
+
+Signature 很有辨识度：**所有** endpoints 同时变慢，慢的时间花在等连接而不是执行上，数据库则报告大量空闲 sessions。
+
+```typescript
+// BAD: a pool per request or per module — under serverless this multiplies
+// by instance count and exhausts the database's connection limit
+// GOOD: one pool per process, sized against the database's ceiling
+const pool = new Pool({
+  max: 10,                        // instances × max must stay under max_connections
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 5_000, // fail fast instead of queueing forever
+});
+```
+
+**更大不等于更快。** 比数据库实际能并发执行的数量还大的 pool，只是把队列从你的应用挪到数据库里 —— 那里更难看见。当实例数量无上限（serverless、autoscaling）时，解法是一个做连接复用的代理（pgbouncer、RDS Proxy），而不是调高 `max`。
+
+#### Missing Image Optimization（前端）
 
 ```html
 <!-- BAD: No dimensions, no format optimization -->
@@ -214,7 +266,7 @@ const tasks = await db.tasks.findMany({
 />
 ```
 
-#### 不必要的 Re-renders（React）
+#### Unnecessary Re-renders (React)
 
 ```tsx
 // BAD: Creates new object on every render, causing children to re-render
@@ -240,7 +292,7 @@ function TaskStats({ tasks }: Props) {
 }
 ```
 
-#### 过大的 Bundle Size
+#### Large Bundle Size
 
 ```typescript
 // Modern bundlers (Vite, webpack 5+) handle named imports with tree-shaking automatically,
@@ -262,7 +314,17 @@ function App() {
 }
 ```
 
-#### 缺少缓存（后端）
+#### Missing Caching（后端）
+
+缓存那些产出昂贵、且读取频率远高于变化的东西。缓存一个本来就快的查询，换来的只是一跳网络、一个 staleness bug 和一套要维护的淘汰策略 —— 别的什么都没有。
+
+**有意识地选择层级：**
+
+| 层级 | 对谁可见 | 何时使用 | 代价 |
+|---|---|---|---|
+| 进程内（`Map`、LRU） | 单个实例 | 数据小、热度高，可接受按实例各自 stale | 每个实例各自漂移；invalidation 只能触达一个实例 |
+| 共享（Redis、Memcached） | 所有实例 | 实例之间必须一致，或值的重算成本很高 | 一跳网络，外加一个要运行和监控的服务 |
+| CDN / edge | 所有人，按 URL | 响应是公开的，且对给定 key 完全相同 | Invalidation 是难点；假定你无法快速撤回一个坏响应 |
 
 ```typescript
 // Cache frequently-read, rarely-changed data
@@ -289,9 +351,67 @@ app.use('/static', express.static('public', {
 res.set('Cache-Control', 'public, max-age=300'); // 5 minutes
 ```
 
-## 性能预算
+**Key 的设计决定正确性。** 每个会改变响应的输入都要进 key：tenant、locale、permissions、feature flags。一个省略了查看者的 key，就是 A 用户的数据被发给 B 用户的方式 —— 而且这种事故往往是以"性能提升"的姿态上线的。
 
-设置预算并强制执行：
+**选一种 invalidation 策略，不要三种都上：**
+
+| 策略 | 取舍 |
+|---|---|
+| TTL | 最简单。你接受最多一个 TTL 的 staleness，所以明确说出可接受的时间窗口 |
+| 基于事件或 tag | 写入即新鲜，但写入方从此必须了解缓存拓扑 |
+| 版本化 keys（`user:42:profile:v7`） | 从不 invalidate，只是不再读旧 key。在淘汰之前会占用内存 |
+
+**防住 stampede。** 一个热点 key 过期，所有并发请求一起 miss，origin 瞬间承受全部负载 —— 这就是缓存从"防事故"变成"造事故"的方式。在单个请求重算的同时继续提供 stale 数据（`stale-while-revalidate`），或把并发 miss 合并到一个 in-flight promise 后面，让 N 个等待者只触发一次重算。
+
+**不要缓存：** 任何 staleness 会构成 correctness bug 的东西（余额、permissions、结账时的库存），或者放在一个不能标识用户的 key 下的按用户数据。请求合并、写入策略、negative caching 和 cache checklist 见 `../../references/performance-checklist.md`。
+
+### 步骤 4: 验证（保留或回退）
+
+在重新测量之前，一个修复只是一个假设。这一步决定它能否活下来。
+
+**用建立 baseline 时同样的方式重新测量：** 同样的命令、同样的条件、同样的固定预算（wall-clock、样本数或请求数）。拿冷缓存下的 baseline 对比热缓存下的结果，测的是缓存，不是你的变更。
+
+**一次只改一件事。** 三个优化一起落地只产生一个数字，你无法归因。如果它们必须一起发布，先分别单独测量。
+
+**跑赢噪声，而不是只打败均值。** 重复测量，把 delta 和 run-to-run 的方差比较。在 ±5% 方差之内取得 3% 的提升不是提升，只是一次不同的抽样。
+
+然后严格地决策：
+
+| 相对 baseline 的结果 | 行动 |
+|---|---|
+| 越过阈值，测试全绿 | **保留。** 提交时在 message 里写上前后数字。 |
+| 在噪声内（无可测变化） | **Revert。** |
+| 更差 | **Revert。** |
+| 有改善，但有测试变红 | **Revert。** 这是穿了胜利外衣的回归。 |
+
+**"中性"是 revert，不是 keep。** 这是团队最常跳过的一步：代码已经写好了，扔掉感觉浪费，于是它未经测量就落了地，codebase 就这样积攒下一堆从未换来任何东西的复杂度。你保留的代码，你要维护一辈子。让它值回票价。
+
+**正确性为指标把关。** 测试套件保持全绿，*并且*数字有变化。一个靠砍掉产品必需的工作来"赢"的"优化"（跳过一次 validation、缓存了必须新鲜的东西、删掉一个其实是承重的 `await`）是回归，不是胜利。
+
+#### 记录每一次尝试，包括被 revert 的
+
+被 revert 的工作在 git history 里不留痕迹，而这正是同一个死点子下季度又被试一遍的原因。保留一份简短的台账，让被丢弃的点子继续被丢弃：
+
+| 点子 | Baseline → 结果 | 结论 | 原因 |
+|---|---|---|---|
+| 给行组件加 memoize | INP 240ms → 235ms | reverted | 在噪声内（±15ms）。瓶颈不在行上。 |
+| 列表虚拟化 | INP 240ms → 90ms | kept | Trace 里的 long tasks 消失了。 |
+| Preconnect 到 API origin | LCP 2.8s → 2.8s | reverted | 本来就是 same-origin。 |
+
+写在 PR description 的一个小节里，或仓库里放一个 `PERF.md`，都可以。要紧的是下一个人（或下一个 agent）在提出实验前先读它，不再重跑一个已经失败过的实验。
+
+### 步骤 5: 防止回归
+
+守住用户真实感受到的那个指标，而不是所有能拿到的数字。用当初证明这次修复值得的同一个 LCP、INP、p95 延迟或其他主指标。
+
+当界面面向用户时，用两层互补的守卫：
+
+- **Synthetic CI gate：** 用性能 budget 在 merge 前捕获可复现的回归。对噪声较大的测量做重复采样，或比较中位数/趋势，避免正常的 run-to-run 方差把 gate 变成一个 flaky check。
+- **Field monitoring：** 对 RUM 数据中有意义的 p75 移动发出告警。用带归因的 `web-vitals` 数据定位原因；把 CrUX 的滚动窗口当作确认信号，而不是即时告警。
+
+当任一守卫触发时，回到 Step 1，在提出下一个修复之前重新建立 baseline。
+
+**设定 budgets 并强制执行：**
 
 ```
 JavaScript bundle: < 200KB gzipped (initial load)
@@ -314,37 +434,57 @@ npx lhci autorun
 
 ## 另请参阅
 
-详细性能检查清单、优化命令和反模式参考见 `references/performance-checklist.md`。
+详细的性能 checklists、优化命令和 anti-pattern 参考见 `../../references/performance-checklist.md`。
 
 
 ## 常见合理化借口
 
-| 合理化借口 | 现实 |
+| 自我合理化 | 现实 |
 |---|---|
-| “以后再优化” | 性能债会复利。现在修复明显反模式，把微优化延后。 |
-| “在我机器上很快” | 你的机器不是用户的机器。要在有代表性的硬件和网络上 profile。 |
-| “这个优化显而易见” | 如果没有测量，你就不知道。先 profile。 |
-| “用户不会注意 100ms” | 研究表明 100ms 延迟会影响转化率。用户注意到的比你想的更多。 |
-| “框架会处理性能” | 框架能避免一些问题，但不能修复 N+1 查询或过大的 bundle。 |
+| "我们以后再优化" | 性能债会利滚利。明显的 anti-pattern 现在就修，micro-optimizations 可以往后放。 |
+| "在我这台机器上很快" | 你的机器不是用户的机器。在有代表性的硬件和网络上做 profile。 |
+| "这个优化显而易见" | 没测过，你就不知道。先 profile。 |
+| "用户注意不到 100ms" | 研究表明 100ms 的延迟就影响转化率。用户比你想象的更敏感。 |
+| "框架会处理性能" | 框架能防住一些问题，但修不了 N+1 查询或过大的 bundle。 |
+| "查询慢，加个索引" | 先看执行计划。索引可能早就存在且用不上，而且每个索引会永远对写入抽税。 |
+| "缓存它就行了" | 缓存一个本来就便宜的调用什么都换不来，还多一个 staleness bug。只缓存既昂贵、*又*被反复重读远超写入的东西。 |
+| "连接池不够就调大点" | 比数据库服务能力还大的 pool 只是把队列挪到更隐蔽的地方。去找是谁占着连接。 |
+| "效果不大，但也没什么坏处" | 中性的变更就该 revert。你会永远为它付维护费，却什么也没换回来。 |
+| "代码都写好了，不如留着" | 沉没成本。测量不在乎这个变更当时写了多久。 |
+| "提升显而易见，不用再测" | 那重测一次很便宜，还能证明它。未经测量的"胜利"正是中性复杂度的入场方式。 |
 
 ## 危险信号
 
-- 没有 profiling 数据支撑的优化
-- 数据获取中存在 N+1 查询模式
-- 列表 endpoints 没有 pagination
-- 图片缺少尺寸、lazy loading 或响应式尺寸
-- Bundle size 增长但没有审查
+- 没有 profiling 数据支撑就做优化
+- 数据获取中出现 N+1 查询模式
+- 没有前后查询计划佐证就加索引
+- cache key 漏掉了响应依赖的某个输入（tenant、locale、viewer）
+- 缓存没有声明的 staleness 窗口，也没有 invalidation 策略
+- 因连接耗尽而调大 connection pool，却没有去找谁占着连接
+- 列表 endpoints 没有分页
+- 图片没有 dimensions、lazy loading 或响应式尺寸
+- bundle size 增长却无人 review
 - 生产环境没有性能监控
-- 到处使用 `React.memo` 和 `useMemo`（过度使用和使用不足一样糟糕）
+- 到处都塞 `React.memo` 和 `useMemo`（滥用和不用一样糟）
+- 保留优化却没有能证明它的重新测量
+- 多个优化被打包进同一次测量，导致没有任何一个变更可以归因
+- 一个"胜利"要求修改、跳过或删除某个测试
+- 同一个失败的优化被反复尝试，因为没人记录过第一次
 
 ## 验证
 
-任何性能相关变更后：
+任何性能相关变更之后：
 
-- [ ] 有变更前后的测量结果（具体数字）
-- [ ] 具体瓶颈已识别并处理
-- [ ] Core Web Vitals 在 "Good" 阈值内
-- [ ] Bundle size 没有显著增加
-- [ ] 新的数据获取代码中没有 N+1 查询
-- [ ] 性能预算在 CI 中通过（如已配置）
+- [ ] 存在前后测量（具体数字）
+- [ ] 结果用与 baseline 相同的方式重新测量（同样的命令、同样的条件）
+- [ ] 提升超过了 run-to-run 方差，而不只是均值
+- [ ] 没有跑赢 baseline 的变更被 revert，而不是当作"中性"保留
+- [ ] 每次尝试都有记录，保留和 revert 的一概记录，死点子不会被重跑
+- [ ] 具体瓶颈已被识别并处理
+- [ ] Core Web Vitals 处于 "Good" 阈值内
+- [ ] bundle size 没有显著增长
+- [ ] 新数据获取代码中没有 N+1 查询
+- [ ] 每个新索引都有前后查询计划佐证，且其写入成本已被考虑
+- [ ] 每个新缓存都说明了 key 的构成与 staleness 处理方式
+- [ ] 被测的用户侧指标有 synthetic budget 或 field monitor，可以检测到回归
 - [ ] 现有测试仍然通过（优化没有破坏行为）

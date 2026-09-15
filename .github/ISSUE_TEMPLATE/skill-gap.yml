@@ -1,0 +1,80 @@
+name: Skill gap
+description: 当某个 skill 的指导有误、已过时或在你的项目中不适用时，请报告。
+title: "[skill-gap]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        当某个 skill 给出了不正确、已过时或与生态不匹配的指导时，请使用这个表单。
+        回答请保持简短——给维护者足够 triage 的上下文即可，不需要完整的长文。
+
+  - type: dropdown
+    id: skill
+    attributes:
+      label: 受影响的 skill
+      description: 哪个 skill 的表现不符合预期？
+      options:
+        - api-and-interface-design
+        - browser-testing-with-devtools
+        - ci-cd-and-automation
+        - code-review-and-quality
+        - code-simplification
+        - context-engineering
+        - debugging-and-error-recovery
+        - deprecation-and-migration
+        - documentation-and-adrs
+        - doubt-driven-development
+        - frontend-ui-engineering
+        - git-workflow-and-versioning
+        - idea-refine
+        - incremental-implementation
+        - interview-me
+        - observability-and-instrumentation
+        - performance-optimization
+        - planning-and-task-breakdown
+        - security-and-hardening
+        - shipping-and-launch
+        - source-driven-development
+        - spec-driven-development
+        - test-driven-development
+        - using-agent-skills
+        - other / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: excerpt
+    attributes:
+      label: 相关的指令或摘录
+      description: 粘贴 SKILL.md（或链接的参考文件）中误导了 agent 或并不适用的那一行或那一小段。
+      placeholder: 例如：verification checklist 说要运行 `npm test`
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 项目上下文
+      description: 语言、构建工具、test runner，或在这里会影响判断的其他约定。
+      placeholder: 例如：Java 21、Maven、JUnit 5
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-failed
+    attributes:
+      label: 哪里不奏效或并不适用
+      description: 当 agent 遵循该 skill 时发生了什么？哪些内容有错或不相关？
+      placeholder: 例如：agent 在 Maven 仓库里坚持要用 npm scripts；而 package.json 根本不存在
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: 你改用了什么做法
+      description: 你（或 agent）是怎么解除阻塞的？可选，但非常有帮助。
+      placeholder: 例如：让 agent 改用 `./mvnw test`，并忽略 npm checklist
+    validations:
+      required: false

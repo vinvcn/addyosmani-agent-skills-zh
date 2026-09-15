@@ -1,0 +1,29 @@
+{
+  "name": "agent-skills",
+  "version": "0.6.9",
+  "description": "面向 AI coding agents 的生产级工程 skills，覆盖从 spec 到 ship 的完整软件开发生命周期。",
+  "author": {
+    "name": "Addy Osmani",
+    "url": "https://github.com/addyosmani"
+  },
+  "homepage": "https://github.com/vinvcn/addyosmani-agent-skills-zh",
+  "repository": "https://github.com/vinvcn/addyosmani-agent-skills-zh",
+  "license": "MIT",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Agent Skills",
+    "shortDescription": "面向 AI coding agents 的资深工程师工作流：spec、plan、build、test、review、ship。",
+    "longDescription": "Agent Skills 打包了来自 Addy Osmani 的 24 个生产级工程工作流，覆盖需求、规划、实现、测试、审查和发布。",
+    "developerName": "Addy Osmani",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "帮我为这项任务选择合适的工程工作流",
+      "用相关的 Agent Skills 规划并实现这个变更"
+    ]
+  }
+}

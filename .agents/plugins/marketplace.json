@@ -1,0 +1,22 @@
+{
+  "name": "agent-skills",
+  "interface": {
+    "displayName": "Agent Skills"
+  },
+  "plugins": [
+    {
+      "name": "agent-skills",
+      "version": "0.6.9",
+      "description": "覆盖软件开发每个阶段的生产级工程 skills：spec、plan、build、verify、review 和 ship。",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

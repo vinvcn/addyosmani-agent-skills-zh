@@ -1,6 +1,6 @@
-# 测试模式参考
+# 测试模式参考（JavaScript/TypeScript）
 
-跨技术栈常见测试模式的快速参考。配合 `test-driven-development` skill 使用。
+JavaScript/TypeScript 测试模式的快速参考  - Jest、React Testing Library、Supertest 和 Playwright  - 用来演示 `test-driven-development` skill 中的通用原则。这些原则（Arrange-Act-Assert、命名、mock 纪律、反模式）适用于任何生态系统；此处展示的语法和工具是 JS/TS 专属的。换到其他技术栈时，遵循同样的原则，使用该仓库自己的测试框架和命令。
 
 ## 目录
 
@@ -202,23 +202,22 @@ import { test, expect } from '@playwright/test';
 test('user can create and complete a task', async ({ page }) => {
   // Navigate and authenticate
   await page.goto('/');
-  await page.fill('[name="email"]', 'test@example.com');
-  await page.fill('[name="password"]', 'testpass123');
-  await page.click('button:has-text("Log in")');
+  await page.getByRole('textbox', { name: /email/i }).fill('test@example.com');
+  await page.getByLabel(/password/i).fill('testpass123');
+  await page.getByRole('button', { name: /log in/i }).click();
 
   // Create a task
-  await page.click('button:has-text("New Task")');
-  await page.fill('[name="title"]', 'Buy groceries');
-  await page.click('button:has-text("Create")');
+  await page.getByRole('button', { name: /new task/i }).click();
+  await page.getByRole('textbox', { name: /title/i }).fill('Buy groceries');
+  await page.getByRole('button', { name: /create/i }).click();
 
   // Verify task appears
-  await expect(page.locator('text=Buy groceries')).toBeVisible();
+  const task = page.getByRole('listitem', { name: /buy groceries/i });
+  await expect(task).toBeVisible();
 
   // Complete the task
-  await page.click('[aria-label="Complete Buy groceries"]');
-  await expect(page.locator('text=Buy groceries')).toHaveCSS(
-    'text-decoration-line', 'line-through'
-  );
+  await task.getByRole('checkbox', { name: /complete buy groceries/i }).check();
+  await expect(task).toHaveCSS('text-decoration-line', 'line-through');
 });
 ```
 

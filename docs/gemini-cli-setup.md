@@ -40,7 +40,7 @@ Gemini CLI 会自动将 skill 名称和 description 注入 prompt。当它识别
 对于你希望始终作为项目持久上下文加载的 skills（而不是按需激活），将它们添加到项目的 `GEMINI.md`：
 
 ```bash
-# 用核心 skills 创建 GEMINI.md 作为持久上下文
+# Create GEMINI.md with core skills as persistent context
 cat /path/to/agent-skills/skills/incremental-implementation/SKILL.md > GEMINI.md
 echo -e "\n---\n" >> GEMINI.md
 cat /path/to/agent-skills/skills/code-review-and-quality/SKILL.md >> GEMINI.md
@@ -57,7 +57,7 @@ cat /path/to/agent-skills/skills/code-review-and-quality/SKILL.md >> GEMINI.md
 
 使用 `/memory show` 验证已加载上下文，修改后用 `/memory reload` 刷新。
 
-> **Skills vs GEMINI.md：** Skills 是按需激活的专业能力，只在相关时加载，能保持上下文窗口干净。GEMINI.md 提供每个 prompt 都会加载的持久上下文。将 skills 用于阶段性 workflows，将 GEMINI.md 用于始终生效的项目约定。
+> **Skills vs GEMINI.md:** Skills 是按需激活的专业能力，只在相关时加载，能保持上下文窗口干净。GEMINI.md 提供每个 prompt 都会加载的持久上下文。将 skills 用于阶段性 workflows，将 GEMINI.md 用于始终生效的项目约定。
 
 ## 推荐配置
 
@@ -82,10 +82,10 @@ cat /path/to/agent-skills/skills/code-review-and-quality/SKILL.md >> GEMINI.md
 
 ### MCP Integration
 
-本包中的许多 skills 会利用 [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) tools 与环境交互。例如：
+本包中的许多 skills 会借助 [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) tools 与环境交互。例如：
 
 - `browser-testing-with-devtools` 使用 `chrome-devtools` MCP extension。
-- `performance-optimization` 可以受益于性能相关 MCP tools。
+- `performance-optimization` 可以受益于性能相关的 MCP tools。
 
 要启用这些能力，请确保你的 Gemini CLI 配置（`~/.gemini/config.json`）中安装了相关 MCP extensions。
 
@@ -107,25 +107,27 @@ Use the @skills/test-driven-development/SKILL.md skill to implement this fix.
 
 ## Slash Commands
 
-本仓库在 `.gemini/commands/` 下提供 7 个 slash commands，对应开发生命周期。从项目根目录运行时，Gemini CLI 会自动发现它们。
+本仓库在 `.gemini/commands/` 下提供 9 个 slash commands：8 个生命周期命令，外加 `/webperf` 这个专项审计命令。从项目根目录运行时，Gemini CLI 会自动发现它们。
 
 | Command | 作用 |
 |---------|--------------|
 | `/spec` | 写代码前先编写结构化 spec |
+| `/constraints` | 定义并执行项目的质量标准 |
 | `/planning` | 将工作拆成小而可验证的任务 |
 | `/build` | 增量实现下一个任务 |
-| `/test` | 运行 TDD workflow — red、green、refactor |
+| `/test` | 运行 TDD workflow：red、green、refactor |
 | `/review` | 五轴 code review |
 | `/code-simplify` | 在不改变行为的前提下降低复杂度 |
 | `/ship` | 通过并行 persona fan-out 执行发布前 checklist |
+| `/webperf` | 审计面向浏览器应用的性能问题与 Core Web Vitals |
 
 每个 command 都会自动调用对应 skill，无需手动加载 skill。
 
-> **注意：** 使用 `/planning` 而不是 `/plan` — `/plan` 会与 Gemini CLI 内部 command 名称冲突。
+> **注意:** 使用 `/planning` 而不是 `/plan`。`/plan` 会与 Gemini CLI 内部 command 名称冲突。
 
 ## 使用建议
 
 1. **优先使用 skills，而不是 GEMINI.md** — Skills 按需激活，让上下文窗口保持聚焦。只有当你希望它们始终加载时，才把 skills 放进 GEMINI.md。
-2. **Skill descriptions 很重要** — 每个 SKILL.md 的 frontmatter 都有 `description` 字段，用来告诉 agents 何时激活它。本仓库的 descriptions 已针对所有支持工具（Claude Code、Gemini CLI 等）的自动发现优化，明确说明 skill *做什么* 以及 *何时* 触发。
-3. **用 agents 做 review** — 请求结构化 code reviews 时，复制 `agents/code-reviewer.md` 内容。
+2. **Skill descriptions 很重要** — 每个 SKILL.md 的 frontmatter 都有 `description` 字段，用来告诉 agents 何时激活它。本仓库的 descriptions 已针对所有支持工具（Claude Code、Gemini CLI 等）的自动发现做了优化，明确说明 skill *做什么* 以及 *何时* 触发。
+3. **用 agents 做 review** — 请求结构化 code reviews 时，复制 `agents/code-reviewer.md` 的内容。
 4. **结合 references** — 处理 testing 或 performance 等特定质量领域时，引用 `references/` 中的 checklists。

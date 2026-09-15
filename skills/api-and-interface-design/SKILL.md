@@ -153,6 +153,67 @@ interface CreateTaskInput {
 | Boolean fields | is/has/can 前缀 | `isComplete`, `hasAttachments` |
 | Enum values | UPPER_SNAKE | `"IN_PROGRESS"`, `"COMPLETED"` |
 
+### 6. 兑现 Idempotency Key
+
+接受 `Idempotency-Key` 是契约，兑现它才是实现，钱也正是从这里亏掉的。服务器接受了 key 却处理得漫不经心，比完全没有 key 更糟，因为客户端从此以为重试是安全的。
+
+**从意图派生 key，而不是从单次尝试。** 同一个意图的多次重试之间 key 必须保持稳定，不同意图之间必须不同：
+
+```typescript
+crypto.randomUUID()                    // ✗ new key per attempt — every retry is a new charge
+`${userId}:${amount}`                  // ✗ two legitimate $50 charges collapse into one
+`${orderId}:${Date.now()}`             // ✗ a timestamp is randomUUID() wearing a hat
+
+req.headers['idempotency-key']         // ✓ client generates once, reuses on retry
+`charge:v1:${orderId}`                 // ✓ derived from an immutable identifier
+```
+
+key 来自客户端或发起事件，绝不来自负责重试的那一层。
+
+**原子地认领。先检查再执行就是一场 race：**
+
+```typescript
+// ✗ TOCTOU: two concurrent retries both read "not seen", both charge
+if (!(await db.exists(key))) {
+  await chargeCard(amount);
+  await db.insert(key);
+}
+
+// ✓ let the unique constraint pick the winner
+try {
+  await db.insert({ key, state: 'in_progress', requestHash });
+} catch (e) {
+  if (isUniqueViolation(e)) return replayOrReject(key);
+  throw;
+}
+const result = await chargeCard(amount);
+await db.update({ key, state: 'succeeded', response: result });
+```
+
+unique constraint *就是*这个机制。无法在单个操作中强制唯一性的存储，支撑不了这套设计。
+
+**守住 payload。** 同一个 key 配上不同的 body 是客户端 bug，必须大声报错失败，而不是把第一次的响应直接发给第二个请求：
+
+```typescript
+if (existing.requestHash !== hash(req.body)) {
+  return res.status(422).json({ error: 'idempotency key reused with a different payload' });
+}
+```
+
+**想清楚 in-flight 的重复请求会得到什么。** 第二个请求到达时第一个还在执行，这在 retry storm 下是常态：
+
+| 策略 | 响应 | 适用场景 |
+|---|---|---|
+| 拒绝 | `409 Conflict` | 客户端稍后可以重试；最简单也最安全 |
+| 等待 | 阻塞等待结果，设置上限 | 调用方需要同步拿到结果 |
+| 返回 pending | `202` + status URL | 长时间运行的副作用 |
+
+绝不能因为第一个请求“看起来卡住了”就放行第二个调用方。一次停滞的尝试、结果未知，恰恰是重复执行代价最高的时刻。
+
+**每次调用有三种结果，不是两种：成功、失败，以及 _未知_。** 超时说明不了副作用是否已经生效。在发起调用*之前*先记录意图，这样如果崩溃发生在调用与响应之间，会留下“有事情待解决”的证据，而不是让一笔扣款被悄悄重试。
+
+**保留期取决于最长的 retry chain**，而不是磁盘成本。key 必须比所有可能重新投递同一意图的路径活得更久，包括一周后重放的 dead-letter queue 和任何 provider 的 dispute 窗口。7 天的 DLQ 后面配 24 小时的 key TTL，重复执行只是时间问题。
+
 ## REST API 模式
 
 ### 资源设计
@@ -270,6 +331,9 @@ function getTask(id: TaskId): Promise<Task> { ... }
 | “没人用那个未记录行为” | Hyrum's Law：只要可观察，就会有人依赖。把每个公共行为当作承诺。 |
 | “我们可以同时维护两个版本” | 多版本会放大维护成本，并制造 diamond dependency 问题。优先采用单版本规则。 |
 | “内部 API 不需要契约” | 内部消费者也是消费者。契约能防止耦合，并支持并行工作。 |
+| “接受了 `Idempotency-Key` header 就足够了” | header 是契约；把 key 与结果存在一起才是实现。接受了却不兑现的 key，会在重试并不安全时告诉客户端重试是安全的。 |
+| “我们的 queue 保证 exactly-once 投递” | consumer 崩溃时没有任何 queue 能做到。broker 的 ack 和你的 side effect 不在同一个事务里。按 at-least-once 加幂等处理来设计。 |
+| “重复请求很罕见” | 它们是*相关的*。retries 恰好在依赖降级时激增，那正是重复最可能、代价也最高的时刻。 |
 
 ## 危险信号
 
@@ -280,6 +344,10 @@ function getTask(id: TaskId): Promise<Task> { ... }
 - List endpoints 没有分页
 - REST URL 中有动词（`/api/createTask`、`/api/getUsers`）
 - 未经验证或清理就使用第三方 API 响应
+- 用 `SELECT` 查 idempotency key 后再 `INSERT`，那是 race，不是防护
+- idempotency key 由 UUID、时间戳或任何每次尝试都重新生成的值派生
+- 接受同一个 key 配不同 request body，却悄悄返回第一次的响应
+- key 保留窗口短于可能重新投递请求的最长路径
 
 ## 验证
 
@@ -292,3 +360,8 @@ function getTask(id: TaskId): Promise<Task> { ... }
 - [ ] 新字段是增量且可选的（向后兼容）
 - [ ] 命名在所有 endpoints 中遵循一致约定
 - [ ] API 文档或类型与实现一起提交
+- [ ] 会改变状态的 endpoints 要么兑现 idempotency key，要么在文档中注明重试不安全
+- [ ] key 的认领是一个原子操作，并由 unique constraint 保护
+- [ ] 复用的 key 配上不同 payload 时大声失败，而不是重放错误的响应
+- [ ] 对 in-flight 重复请求的响应是有意选择的（409、等待或 202），而不是碰巧落到哪种行为
+- [ ] key 保留期长于最长的 retry path，包括 dead-letter 重放

@@ -1,6 +1,6 @@
 ---
 name: doubt-driven-development
-description: 在每个非平凡决策成立前，用全新上下文进行对抗式审查。当正确性比速度更重要、处理不熟悉代码、风险较高（生产、安全敏感逻辑、不可逆操作），或任何自信输出现在验证比之后调试更便宜时使用。
+description: 在每个非平凡决策成立前，用全新上下文进行对抗式审查。当你想在继续推进前交叉质询每一个假设、对计划做压力测试以暴露隐藏的失败模式、正确性比速度更重要、在处理不熟悉的代码、风险很高（生产 auth、安全敏感逻辑、高风险迁移、不可逆操作），或任何自信输出现在验证比之后调试更便宜时使用。
 ---
 
 # 怀疑驱动开发
@@ -43,7 +43,7 @@ description: 在每个非平凡决策成立前，用全新上下文进行对抗�
 
 这个 skill 设计给**主会话编排者**使用，因为第 3 步（DOUBT，详见下文）可以 spawn 一个全新上下文审查者。
 
-- **不要把此 skill 加入 persona 的 `skills:` frontmatter。** 遵循第 3 步的 persona 会 spawn 另一个 persona，这正是 `references/orchestration-patterns.md` 明确禁止的编排反模式（“personas do not invoke other personas”）。
+- **不要把此 skill 加入 persona 的 `skills:` frontmatter。** 遵循第 3 步的 persona 会 spawn 另一个 persona，这正是 `../../references/orchestration-patterns.md` 明确禁止的编排反模式（“personas do not invoke other personas”）。
 - **如果你发现自己在 subagent 上下文中应用此 skill**（Claude Code 会阻止嵌套 subagent spawn）：首选路径是告知用户，doubt-driven 无法嵌套运行，并让主会话处理。只有作为最后手段，才使用降级的自我质询 fallback：把 ARTIFACT + CONTRACT 改写成一个带硬心理分隔的全新自我 prompt，与之前推理隔离，并执行第 1-5 步。这**不是全新上下文审查**（你携带着自己的上下文），所以要把结果标记为降级，并在用户可达时优先升级。
 
 ## 流程
@@ -163,7 +163,7 @@ gemini --approval-mode plan -p "" < /tmp/doubt-prompt.md
 - 跨模型会被**跳过**，且输出中必须**声明**跳过：*"Cross-model skipped: non-interactive context."*
 - **绝不要在没有用户明确授权的情况下调用外部 CLI**，这是一个承重安全属性。
 
-跨模型会增加成本、延迟和工具脆弱性。Agent 在每个 cycle 呈现选择；由用户决定该产物是否值得。 
+跨模型会增加成本、延迟和工具脆弱性。Agent 在每个 cycle 呈现选择；由用户决定该产物是否值得。
 
 ### Step 4: RECONCILE — 合并发现
 
@@ -226,7 +226,7 @@ gemini --approval-mode plan -p "" < /tmp/doubt-prompt.md
 - **`source-driven-development`**：SDD 对照官方文档验证*框架事实*。Doubt-driven 验证*你对 artifact 的推理*。SDD 检查 API 是否存在；doubt-driven 检查你是否在契约下正确使用它。
 - **`test-driven-development`**：TDD 的 RED 步骤是具体化的怀疑；一个失败测试就是证伪尝试。当 TDD 适用时，该失败测试*就是*行为 claim 的 doubt step。
 - **`debugging-and-error-recovery`**：当审查者提出真实失败模式时，进入 debugging skill 来定位并修复。
-- **仓库编排规则**（`references/orchestration-patterns.md`）：此 skill 从主会话编排。Persona 调用另一个 persona 是反模式 B，见上面的加载约束。
+- **仓库编排规则**（`../../references/orchestration-patterns.md`）：此 skill 从主会话编排。Persona 调用另一个 persona 是反模式 B，见上面的加载约束。
 
 ## 验证
 
