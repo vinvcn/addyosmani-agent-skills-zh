@@ -21,9 +21,9 @@ function readManifestVersion(manifestPath) {
 test("all plugin manifests use the latest release tag", () => {
   const expectedVersion = execFileSync(
     "git",
-    ["describe", "--tags", "--abbrev=0"],
+    ["tag", "--list", "[0-9]*", "--sort=-version:refname"],
     { encoding: "utf8" },
-  ).trim();
+  ).split("\n")[0].trim();
 
   for (const manifestPath of manifestPaths) {
     assert.equal(
