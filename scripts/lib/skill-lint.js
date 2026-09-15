@@ -34,20 +34,22 @@ const KEBAB_CASE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 // A description must state WHEN to use the skill, not just what it does
 // (docs/skill-anatomy.md → Required). Accept the canonical "Use when …"
 // plus the equivalent "Use before/after/during …" phrasings in use today.
+// Localized descriptions use 中文触发语; accept those too.
 // Reject negated forms ("Do not use when …", "Don't use when …") — those
 // describe exclusions, not trigger conditions.
 const DESCRIPTION_TRIGGER        = /\buse (this )?when\b|\buse (before|after|during)\b/i;
+const DESCRIPTION_TRIGGER_ZH     = /用于|时使用|当[^。]*时|在[^。]*时/;
 const DESCRIPTION_TRIGGER_NEGATE = /\b(do not|don't|never) use (this )?(when|before|after|during)\b/i;
 
 // Sections every standard SKILL.md must contain.
 // Each entry is an array of acceptable heading strings — the first
 // match wins, so you can list canonical + legacy aliases.
 const REQUIRED_SECTIONS = [
-  ['## Overview'],
-  ['## When to Use'],
-  ['## Common Rationalizations'],
-  ['## Red Flags'],
-  ['## Verification'],
+  ['## Overview', '## 概览', '## 概述'],
+  ['## When to Use', '## 何时使用'],
+  ['## Common Rationalizations', '## 常见合理化借口', '## 常见自我合理化', '## 常见的合理化', '## 常见的合理化借口'],
+  ['## Red Flags', '## 危险信号', '## 红旗'],
+  ['## Verification', '## 验证'],
 ];
 
 // Skills that are intentionally exempt from section checks.
@@ -161,7 +163,7 @@ function lintSkillContent(dirName, content, knownSkills) {
         ` (agents inject this into the system prompt)`
       );
     }
-    const hasTrigger       = DESCRIPTION_TRIGGER.test(fm.description);
+    const hasTrigger       = DESCRIPTION_TRIGGER.test(fm.description) || DESCRIPTION_TRIGGER_ZH.test(fm.description);
     const onlyNegated      = hasTrigger && DESCRIPTION_TRIGGER_NEGATE.test(fm.description)
       && !fm.description.replace(DESCRIPTION_TRIGGER_NEGATE, '').match(DESCRIPTION_TRIGGER);
     if (!hasTrigger || onlyNegated) {
