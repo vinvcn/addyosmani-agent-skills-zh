@@ -23,7 +23,7 @@ Skills 会编码资深工程师构建软件时使用的工作流、质量门禁�
 
 本地化刷新遵循 [.skills/translate-skill/SKILL.md](.skills/translate-skill/SKILL.md)，只同步并翻译用户可见内容，不把本仓库当作上游 Git 镜像。同步历史记录见 [SYNC.md](SYNC.md)，术语译法以 [TRANSLATION-GLOSSARY.md](TRANSLATION-GLOSSARY.md) 为唯一权威，翻译贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md#翻译贡献)。
 
-- 2026-10-18: 已同步上游 `addyosmani/agent-skills@aeac41d`（v0.6.13），本地同步提交 `待定`。plugin manifest bump 至 0.6.13；`performance-optimization` 与 `security-and-hardening` 重构为精简 SKILL.md + references 模式；`idea-refine` 对齐 skill anatomy；`interview-me`、`spec-driven-development`、`code-review-and-quality`、`test-driven-development` 等内容更新；新增 `docs/other-hosts.md`、skill-lint、floor-guard 参考测试与 hook 回归测试等基础设施。
+- 2026-10-18: 已同步上游 `addyosmani/agent-skills@aeac41d`（v0.6.13），本地同步提交 `5f4f74b`。plugin manifest bump 至 0.6.13；`performance-optimization` 与 `security-and-hardening` 重构为精简 SKILL.md + references 模式；`idea-refine` 对齐 skill anatomy；`interview-me`、`spec-driven-development`、`code-review-and-quality`、`test-driven-development` 等内容更新；新增 `docs/other-hosts.md`、skill-lint、floor-guard 参考测试与 hook 回归测试等基础设施。
 - 2026-05-09: 已同步上游 `addyosmani/agent-skills@4c585c3`，本地同步提交 `dbc2a47`。已包含完整公开 docs/setup/command metadata 的简体中文本地化。
 - 2026-09-13: 已同步上游 `addyosmani/agent-skills@be4e44a`，本地同步提交 `8899c97`。新增 `constraint-driven-development`、`interview-me`、`observability-and-instrumentation` 三个 skills，`/constraints`、`/webperf` 两个命令，`web-performance-auditor` persona，以及 Codex/Antigravity/Command Code 适配器、evals 和校验脚本；刷新全部 docs 与 skills 翻译。
 
