@@ -72,406 +72,98 @@ description: 加固代码以防漏洞。用于审计某个输入处理函数是�
 - **绝不把 sessions 存放在客户端可访问的存储里**（用 localStorage 存 auth tokens）
 - **绝不向用户暴露 stack traces** 或内部错误细节
 
-## OWASP Top 10 防护模式
+## 加固控制
 
-这些是预防模式，不是排名。2021 年的排序见 `../../references/security-checklist.md` 中的速查表。
+下面的规则就是工作流；每条规则的一个具体实现放在 [references/hardening-patterns.md](references/hardening-patterns.md)。到写那段代码时再打开你需要的那一节，不要提前读。
 
-### Injection（SQL、NoSQL、OS Command）
+### Injection、XSS 与访问控制
 
-```typescript
-// BAD: SQL injection via string concatenation
-const query = `SELECT * FROM users WHERE id = '${userId}'`;
+- 参数化每一个查询。绝不要用输入字符串拼出 SQL、NoSQL 或 shell 命令。
+- 通过框架的自动转义对输出编码。如果原始 HTML 不可避免，先用一个 allowlist sanitizer 做清洗。
+- 对每一个请求检查 **authorization**，而不只是 authentication：已认证用户必须拥有（或被允许访问）那个具体资源（A01，IDOR）。
 
-// GOOD: Parameterized query
-const user = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+模式：[注入](references/hardening-patterns.md#注入)、[XSS](references/hardening-patterns.md#跨站脚本攻击xss)、[访问控制](references/hardening-patterns.md#访问控制失效)。
 
-// GOOD: ORM with parameterized input
-const user = await prisma.user.findUnique({ where: { id: userId } });
-```
+### 认证与会话
 
-### Broken Authentication
+- 用 bcrypt（≥12 rounds）、scrypt 或 argon2 对密码做 hash。Session secret 来自环境变量，绝不来自代码。
+- Session cookie 要带 `httpOnly`、`secure` 和 `sameSite: 'lax'` 或 `'strict'`（这是 CSRF 防线；`'none'` 会在跨站请求中带上 cookie），并设置一个有界的 `maxAge`。
 
-```typescript
-// Password hashing
-import { hash, compare } from 'bcrypt';
+模式：[身份认证](references/hardening-patterns.md#身份认证失效)。
 
-const SALT_ROUNDS = 12;
-const hashedPassword = await hash(plaintext, SALT_ROUNDS);
-const isValid = await compare(plaintext, hashedPassword);
+### 安全 headers、CORS 与响应
 
-// Session management
-app.use(session({
-  secret: process.env.SESSION_SECRET,  // From environment, not code
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,     // Not accessible via JavaScript
-    secure: true,       // HTTPS only
-    sameSite: 'lax',    // CSRF protection
-    maxAge: 24 * 60 * 60 * 1000,  // 24 hours
-  },
-}));
-```
+- 每个响应都带安全 headers（helmet 或框架等价物）；CSP 从 `default-src 'self'` 起步，然后收紧，而不是放松。
+- CORS 限定为配置中的显式 origin 列表。带 credentials 时绝不用 `*`。
+- 任何响应发出前先剥离敏感字段（`passwordHash`、reset tokens）。错误响应体保持通用；内部细节只进服务端日志。
 
-### Cross-Site Scripting (XSS)
+模式：[安全配置错误](references/hardening-patterns.md#安全配置错误)、[敏感数据泄露](references/hardening-patterns.md#敏感数据泄露)。
 
-```typescript
-// BAD: Rendering user input as HTML
-element.innerHTML = userInput;
+### 输入校验与上传
 
-// GOOD: Use framework auto-escaping (React does this by default)
-return <div>{userInput}</div>;
+- 在边界用 schema 校验：allowlist 的形状、长度、枚举、格式。拒绝时返回 422 和结构化 details；下游代码只用解析后的、有类型的值。
+- 上传：allowlist MIME 类型、限制大小、在关键处校验内容（magic bytes）。扩展名证明不了任何事。
 
-// If you MUST render HTML, sanitize first
-import DOMPurify from 'dompurify';
-const clean = DOMPurify.sanitize(userInput);
-```
+模式：[Schema 校验](references/hardening-patterns.md#在边界进行-schema-校验)、[文件上传](references/hardening-patterns.md#文件上传安全)。
 
-### Broken Access Control
+### 服务端抓取（SSRF）
 
-```typescript
-// Always check authorization, not just authentication
-app.patch('/api/tasks/:id', authenticate, async (req, res) => {
-  const task = await taskService.findById(req.params.id);
+任何受用户影响的 URL —— webhooks、从 URL 导入、图片代理、链接预览 —— 都可能被指向内部服务。对 scheme 和 host 做 allowlist，解析 **全部** DNS 记录，只要有私有或保留地址（loopback、link-local `169.254.169.254`、private、unique-local，IPv4 和 IPv6 都算）就拒绝，并不允许重定向。这个检查仍然存在 DNS-rebinding 的 TOCTOU 缺口：对高风险的入口，固定（pin）解析出的 IP，或在前面放一个过滤代理。
 
-  // Check that the authenticated user owns this resource
-  if (task.ownerId !== req.user.id) {
-    return res.status(403).json({
-      error: { code: 'FORBIDDEN', message: 'Not authorized to modify this task' }
-    });
-  }
-
-  // Proceed with update
-  const updated = await taskService.update(req.params.id, req.body);
-  return res.json(updated);
-});
-```
-
-### Security Misconfiguration
-
-```typescript
-// Security headers (use helmet for Express)
-import helmet from 'helmet';
-app.use(helmet());
-
-// Content Security Policy
-app.use(helmet.contentSecurityPolicy({
-  directives: {
-    defaultSrc: ["'self'"],
-    scriptSrc: ["'self'"],
-    styleSrc: ["'self'", "'unsafe-inline'"],  // Tighten if possible
-    imgSrc: ["'self'", 'data:', 'https:'],
-    connectSrc: ["'self'"],
-  },
-}));
-
-// CORS — restrict to known origins
-app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || 'http://localhost:3000',
-  credentials: true,
-}));
-```
-
-### Sensitive Data Exposure
-
-```typescript
-// Never return sensitive fields in API responses
-function sanitizeUser(user: UserRecord): PublicUser {
-  const { passwordHash, resetToken, ...publicFields } = user;
-  return publicFields;
-}
-
-// Use environment variables for secrets
-const API_KEY = process.env.STRIPE_API_KEY;
-if (!API_KEY) throw new Error('STRIPE_API_KEY not configured');
-```
-
-### Server-Side Request Forgery (SSRF)
-
-只要服务器去抓取一个受用户影响的 URL —— webhooks、"从 URL 导入"、图片代理、链接预览 —— 攻击者就能把它指向内部服务（cloud metadata、`localhost`、私有 IP）。
-
-```typescript
-// BAD: fetch whatever the user gives you
-await fetch(req.body.webhookUrl);
-
-// GOOD: allowlist scheme + host, reject if ANY resolved IP is private, forbid redirects
-import { lookup } from 'node:dns/promises';
-import ipaddr from 'ipaddr.js';
-
-const ALLOWED_HOSTS = new Set(['hooks.example.com']);
-
-async function assertSafeUrl(raw: string): Promise<URL> {
-  const url = new URL(raw);
-  if (url.protocol !== 'https:') throw new Error('https only');
-  if (!ALLOWED_HOSTS.has(url.hostname)) throw new Error('host not allowed');
-  // Resolve ALL records; a single private/reserved address fails the check.
-  const addrs = await lookup(url.hostname, { all: true });
-  if (addrs.some((a) => ipaddr.parse(a.address).range() !== 'unicast')) {
-    throw new Error('private/reserved IP');
-  }
-  return url;
-}
-
-await fetch(await assertSafeUrl(req.body.webhookUrl), { redirect: 'error' });
-```
-
-`range() !== 'unicast'` 这个检查覆盖了 loopback、link-local `169.254.169.254`（cloud metadata，SSRF 的头号目标）、private 和 unique-local 范围，IPv4 与 IPv6 都适用。
-
-**注意 —— 这里仍然存在一个 TOCTOU gap。** `fetch` 会在检查之后重新解析 DNS，所以攻击者用一条短 TTL 的记录，就能在校验和建立连接之间把域名 rebind 到内部 IP。对高风险场景，要么解析一次并连接固定（pinned）的 IP，要么在前面放一个过滤代理（`request-filtering-agent` / `ssrf-req-filter`）。
-
-## 输入校验模式
-
-### 在边界进行 Schema Validation
-
-```typescript
-import { z } from 'zod';
-
-const CreateTaskSchema = z.object({
-  title: z.string().min(1).max(200).trim(),
-  description: z.string().max(2000).optional(),
-  priority: z.enum(['low', 'medium', 'high']).default('medium'),
-  dueDate: z.string().datetime().optional(),
-});
-
-// Validate at the route handler
-app.post('/api/tasks', async (req, res) => {
-  const result = CreateTaskSchema.safeParse(req.body);
-  if (!result.success) {
-    return res.status(422).json({
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: 'Invalid input',
-        details: result.error.flatten(),
-      },
-    });
-  }
-  // result.data is now typed and validated
-  const task = await taskService.create(result.data);
-  return res.status(201).json(task);
-});
-```
-
-### 文件上传安全
-
-```typescript
-// Restrict file types and sizes
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-
-function validateUpload(file: UploadedFile) {
-  if (!ALLOWED_TYPES.includes(file.mimetype)) {
-    throw new ValidationError('File type not allowed');
-  }
-  if (file.size > MAX_SIZE) {
-    throw new ValidationError('File too large (max 5MB)');
-  }
-  // Don't trust the file extension — check magic bytes if critical
-}
-```
+模式：[SSRF](references/hardening-patterns.md#服务端请求伪造ssrf)。
 
 ### 对派生路径的破坏性操作
 
-一次 delete、move 或 overwrite，其安全性只取决于命名目标的那个值的安全性。从 kernel、job payload 或兄弟服务读取这个值，只能证明它*从哪里来*，不能证明是谁*写入*的 —— 另一个进程的命令行和表单字段一样受攻击者控制。一个形状检查（"绝对路径、至少一层目录深"）只能证明格式良好，却常被误当成授权；清理脚本删掉根目录而不是叶子目录，就是这么发生的。
+一次 delete、move 或 overwrite，其安全性只取决于命名其目标的值；信任跟随的是*写入*那个值的人，而不是投递它的通道：另一个进程的命令行和表单字段一样受攻击者控制。形状检查只能证明格式良好，不能证明授权。在调用之前，三个条件缺一不可：解析后的目标（已解析 symlinks）位于某个 **allowlisted root** 之下；它至少在该 root **下一层**；并且它带有**在操作之前读取的 ownership 证据**。拒绝执行时，记下被拒绝的目标然后停止；绝不回退到更宽的默认路径。
 
-在发起破坏性调用之前，三个条件缺一不可：解析后的目标位于某个 **allowlisted root** 之下（在解析 symlink 之后比较，绝不在原始字符串上比较）；它至少在该 root 之下**一层**，因此 root 本身永远不会成为目标；并且它带有**属于你**的证据，这份证据要在操作*之前*、在任何会移除它的 teardown 之前读取 —— 否则"不存在"和"不是我的"无法区分。拒绝执行时，记下被拒绝的目标然后停止：一个回退到更宽默认路径的清理脚本，正是这套检查要防的事故。完整示例见 `../../references/security-checklist.md`。
+这个检查为什么比看起来更弱（标记自我声明、check/use 竞争）：[对派生路径的破坏性操作](references/hardening-patterns.md#对派生路径的破坏性操作)。完整示例：`../../references/security-checklist.md`。
 
-有两个局限，因为这个检查看起来比实际更强。树内部的标记文件是自我声明 —— 任何能往那里写的东西都能写这个标记 —— 所以期望的 owner 必须来自已认证的状态，而且标记本身需要完整性保护（严格的 ownership 或一个 MAC）才算得上授权。另外，先解析路径再对*名字*执行操作，只要有一个不可信进程能换掉某个祖先目录，就存在 check/use race：在共享卷上，用文件 descriptor 持有目标，并使用不跟随 symlink、限定在 root 之下的操作，或者确保这段时间内目录层级不会变化。
+### 限流
 
-## 分流依赖审计结果
+对 API 总体上限制，对 auth 端点严格限制（约每 15 分钟 10 次尝试）。一旦有多个进程在服务流量，内存计数器就会悄悄变成 `max × instances`，或者在 serverless 上永远不触发：用共享存储支撑限流器。
 
-包管理器的 audit 报告的是已知 advisories；它既不证明一个包值得信任，也不证明易受攻击的代码是可达的。用这棵决策树：
+模式：[限流](references/hardening-patterns.md#限流)。
 
-```
-The native package-manager audit reports a vulnerability
-├── Severity: critical or high
-│   ├── Is the vulnerable code reachable in runtime, build, test, or deployment paths?
-│   │   ├── YES --> Fix immediately (update, patch, or replace the dependency)
-│   │   └── NO (confirmed unused across those paths) --> Fix soon, but not a blocker
-│   └── Is a fix available?
-│       ├── YES --> Update to the patched version
-│       └── NO --> Check for workarounds, consider replacing the dependency, or add to allowlist with a review date
-├── Severity: moderate
-│   ├── Reachable in production? --> Fix in the next release cycle
-│   └── Dev-only? --> Fix when convenient, track in backlog
-└── Severity: low
-    └── Track and fix during regular dependency updates
-```
+### Secrets
 
-**关键问题：**
-- 易受攻击的那个函数在你的代码路径里真的被调用吗？
-- 这个依赖是 runtime dependency 还是仅开发使用？
-- 结合你的部署上下文，这个漏洞可被利用吗（例如一个仅客户端应用里的 server-side 漏洞）？
+Secrets 来自环境变量。`.env.example` 带占位值提交；真实的 `.env*` 文件和密钥材料进 gitignore；提交前先 grep 一遍暂存的 diff。**一个一旦到达 remote 的 secret 在落地那一刻就已泄露：先轮换它，再清除 history。**
 
-当你推迟一个修复时，记录原因并设定一个复查日期。
+模式：[Secrets 管理](references/hardening-patterns.md#secrets-管理)。
 
-### 供应链卫生
+### 依赖与供应链
 
-不要假设是 npm，也不要把最近的 manifest 当作 install root。按这个顺序执行：
+1. **找到 installation boundary 和 manager。** 使用拥有 lockfile 的 workspace 根目录；只有在独立嵌套项目位于该 workspace 之外时才使用它。交叉验证 `packageManager`（存在时）、lockfile 和 CI；出现分歧或互相竞争的 lockfiles 时停下。固定 manager 版本。
+2. **在首次执行前阻断依赖脚本。** 以禁用脚本的方式 bootstrap，或采用一个有文档的 fail-closed 策略；检查待执行脚本的源码，只批准最低限度必需的包，提交这个策略，然后用一次干净的 frozen/immutable install 验证。绝不无差别批准。
+3. **每次发布前，用原生 audit 针对已提交的 lockfile 跑一遍。** 按 **可达性**（runtime、build、test、deploy 路径）和修复可得性分诊 critical/high。绝不自动应用强制修复（`npm audit fix --force` 或等价命令），因为强制修复可能越过声明的依赖范围；先预览、阅读 changelogs，并逐一测试产生的升级。每一次推迟都要记录原因和复查日期。
+4. **Audit 只能匹配已知 advisories。** 它抓不到新出现的恶意包或 typosquatting 包（`cross-env` 对比 `crossenv`）。把新依赖、lockfile diff 和 script-policy 变更放在一起 review：ownership、维护状况、发布时长、provenance、传递依赖图。在支持的地方验证 registry 签名（`npm audit signatures`、`pnpm audit signatures`），并把"缺失"当作需要调查的信号，而不是被攻破的自动证明（A06，LLM03）。
 
-1. **找到 installation boundary 和 manager。** 使用拥有 lockfile 的 workspace 根目录；只有在独立嵌套项目位于该 workspace 之外时才使用它。在那里，交叉验证 `packageManager`（存在时）、lockfile 和 CI；出现分歧或互相竞争的 lockfile 时停下。固定 manager 版本，并使用 `../../references/security-checklist.md` 中的对照矩阵。
-2. **在首次执行前阻断依赖脚本。** 以禁用脚本的方式 bootstrap，或采用一个有文档的 fail-closed 策略；检查待执行脚本的源码，只批准最低限度必需的包，提交这个策略，然后用一次干净的 frozen/immutable install 验证。绝不无差别批准脚本。
+分诊决策树：[依赖审计分诊](references/hardening-patterns.md#依赖审计分诊)。Manager 对照矩阵和 install-script 门禁：`../../references/security-checklist.md`。
 
-Audit 只能发现已知 advisories，抓不到新出现的恶意包或 typosquatting 包。因此：
+### 个人数据与隐私
 
-- **绝不自动应用强制的 audit 修复**（`npm audit fix --force` 或等价命令）。先预览修复内容、阅读 changelogs，并逐一测试产生的升级；强制修复可能越过声明的依赖范围。
-- **在支持的地方验证 registry 签名和 provenance**（`npm audit signatures`、`pnpm audit signatures`），把"缺失"当作需要调查的信号，而不是自动认定为被攻破。
-- **把新依赖、lockfile diff 和 script-policy 变更放在一起 review** —— ownership、维护状况、发布时长、provenance、传递依赖图，以及 typosquats，如 `cross-env` 对比 `crossenv`（OWASP **A06**、**LLM03**）。
+加固问的是"攻击者能读到它吗？"Privacy 问的是"我们*到底该不该*持有它，该持有多久？" 最好保护、最不会泄露、最省合规成本的数据，是你从未收集过的数据；把个人数据当作要最小化的负债。
 
-## Rate Limiting
+- **在添加字段时就分类**（非个人、PII、敏感），并按类别分别处理。你无法保护、也无法兑现删除请求的数据，是你找不到的数据。
+- **只针对一个声明过的目的去收集。** "以后可能用得上"是潜在的 breach 范围，不是目的。不要把 PII 写进 telemetry（`observability-and-instrumentation` skill 从 ops 角度表达了同一个观点）。
+- **事先设定保留期限，然后真的去删除。** 每个个人数据存储都需要一个 TTL 和一条可用的删除路径，包括备份、缓存、搜索索引和分析副本。
+- **支持你所在司法辖区要求的数据主体权利**（GDPR、CCPA 及同类法规）：导出、更正、删除。设计 schema 时让用户的数据可查找、可擦除，而不是不可逆地抹散在各个系统里。
+- **同意控制收集和第三方共享，并且可审计。** 把 PII 发给分析、广告或 LLM 厂商就属于"共享"；厂商需要一份数据处理协议。把地区做成可配置的策略，而不是硬编码的假设。
 
-```typescript
-import rateLimit from 'express-rate-limit';
+分类表：[数据分类](references/hardening-patterns.md#数据分类)。Privacy 事件会启动 breach-notification 的倒计时；用 `debugging-and-error-recovery` skill 跑 postmortem。
 
-// General API rate limit
-app.use('/api/', rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,                   // 100 requests per window
-  standardHeaders: true,
-  legacyHeaders: false,
-}));
+### AI / LLM 功能
 
-// Stricter limit for auth endpoints
-app.use('/api/auth/', rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,  // 10 attempts per 15 minutes
-}));
-```
+调用 LLM —— chatbots、摘要器、agents、RAG —— 会增加一个新的攻击面；把它映射到 [OWASP Top 10 for LLM Applications (2025)](https://genai.owasp.org/llm-top-10/)：
 
-**一旦进程数超过一个，就用共享存储来计数。** `express-rate-limit` 默认把计数器放在进程内存里。在 load balancer 后面，每个实例各自计数，实际限额是 `max × instances`；在 serverless 或 edge 运行时，每次新调用都从零开始，所以上面那个 auth 限额可能永远不会触发。传入一个共享 `store`（通过 `rate-limit-redis` 用 Redis），或使用一个在不适合长连接 TCP 的地方也能工作的 HTTP-based limiter（例如 `@upstash/ratelimit`）：
+- **模型输出是不可信输入**（LLM05）。绝不进 `eval`、SQL、shell、`innerHTML` 或文件路径；先防御式解析，用 schema 校验，再编码。
+- **Prompts 可能被劫持**（LLM01）。上下文里的不可信文本 —— 用户消息、抓取的网页、PDF —— 都可能携带指令。System prompt 不是安全边界；权限要在代码里强制执行。
+- **把 secrets、其他租户的数据和完整 system prompt 挡在 context window 之外**（LLM02，LLM07）；限定工具权限，校验每一个工具参数，并对破坏性操作要求确认（LLM06）；给 tokens、请求速率和递归深度设上限（LLM10）；按租户分区 RAG embeddings，并在索引文档前先校验它们（LLM08）。
 
-```typescript
-import { Ratelimit } from '@upstash/ratelimit';
-import { Redis } from '@upstash/redis';
+模式：[LLM 输出处理](references/hardening-patterns.md#llm-输出处理)。
 
-const authLimiter = new Ratelimit({
-  redis: Redis.fromEnv(),                       // UPSTASH_REDIS_REST_URL + _TOKEN
-  limiter: Ratelimit.slidingWindow(10, '15 m'), // 10 attempts per 15 minutes, across all instances
-});
-const { success } = await authLimiter.limit(`login:${req.ip}`);
-if (!success) return res.status(429).end();
-```
+## 审查清单
 
-## Secrets 管理
-
-```
-.env files:
-  ├── .env.example  → Committed (template with placeholder values)
-  ├── .env          → NOT committed (contains real secrets)
-  └── .env.local    → NOT committed (local overrides)
-
-.gitignore must include:
-  .env
-  .env.local
-  .env.*.local
-  *.pem
-  *.key
-```
-
-**提交前务必检查：**
-```bash
-# Check for accidentally staged secrets
-git diff --cached | grep -i "password\|secret\|api_key\|token"
-```
-
-**如果一个 secret 已经被提交，立刻轮换它。** 删掉那一行或重写 history 都不够 —— 只要它到达过 remote 就当作已泄露。先吊销并重新签发 key，再从 history 中清除它。
-
-## 数据隐私与合规
-
-保护数据问的是"攻击者能读到它吗？"。Privacy 问的是"我们*该*持有它吗，该持有多久？" —— 这是加固回答不了的另一个问题。最好保护、最不会泄露、最省合规成本的数据，是你从未收集过的数据。把个人数据当作要最小化的负债，而不是要囤积的资产。
-
-**知道你持有什么。** 你无法保护或删除你找不到的数据。在添加字段时就做好分类：
-
-| 类别 | 示例 | 处理方式 |
-|---|---|---|
-| **非个人** | 聚合数据、匿名计数 | 常规处理 |
-| **个人（PII）** | 姓名、邮箱、IP、设备/用户 ID | 最小化、访问控制、纳入导出/删除 |
-| **敏感** | 健康、财务、位置、生物特征、政府 ID、任何关于未成年人的信息 | 收集需要额外依据、更严格的访问、通常需要加密 + 审计日志 |
-
-**操作规则：**
-- **最小化并设定目的。** 只在有明确用途时才收集某个字段。"以后可能用得上"不是目的，那是潜在的 breach 范围。不要把 PII 写进 telemetry 日志（`observability-and-instrumentation` skill 从 ops 角度表达了同一个观点）。
-- **事先设定保留期限，并且真的去删除。** 每个人个人数据存储都需要一个 TTL 和一条可用的删除路径 —— 包括备份、缓存、搜索索引和分析副本。没有到期时间的数据，就是一张预约在未来发生的 breach。
-- **支持你所在司法辖区要求的数据主体权利**（GDPR/CCPA 及同类法规）：按请求导出、更正和删除。这些是工程特性 —— 设计 schema 时要让用户的数据*可查找*、*可擦除*，而不是不可逆地抹散在各个系统里。
-- **在收集或第三方共享之前取得同意**，并让同意可审计。把 PII 发给分析/广告/LLM 厂商就属于"共享" —— 由用户的选择决定放行，且厂商需要签一份数据处理协议。
-- **默认值要本地化，不要硬编码某一个地区的法律。** 数据驻留和规则随用户所在地不同；把策略做成可配置的边界，而不是一个假设。
-
-当数据跨越 trust boundary 时，按不可信数据处理并校验它（见上文 Input Validation）；当 privacy 事件暴露了个人数据时，breach-notification 的倒计时是 postmortem 的一部分 —— 遵循 `debugging-and-error-recovery` skill。
-
-## AI / LLM 功能安全
-
-如果你的应用调用 LLM —— chatbots、摘要器、agents、RAG —— 它就继承了一个新的攻击面。把它映射到 [OWASP Top 10 for LLM Applications (2025)](https://genai.owasp.org/llm-top-10/)：
-
-- **把所有模型输出当作不可信输入（LLM05: Improper Output Handling）。** 绝不把 LLM 输出直接传进 `eval`、SQL、shell、`innerHTML` 或文件路径。像校验原始用户输入一样校验并编码它。
-- **假设 prompts 可能被劫持（LLM01: Prompt Injection）。** context window 里的任何不可信文本 —— 用户消息、抓取的网页、PDF —— 都可能携带指令。system prompt 不是安全边界；权限要在代码里强制执行，而不是写在 prompt 里。
-- **让 secrets 和其他用户的数据远离 prompts（LLM02 / LLM07）。** context 里的任何东西都可能被回显出来。不要把 API keys、跨租户数据或完整 system prompt 放在模型能重复出来的位置。
-- **约束工具和 agent 的权限（LLM06: Excessive Agency）。** 把工具限定到最小范围，对破坏性或不可逆操作要求确认，并校验每一个工具参数。
-- **限制消耗（LLM10: Unbounded Consumption）。** 给 tokens、请求速率、循环/递归深度设上限，让精心构造的输入无法刷高成本或挂死系统。
-- **隔离检索数据（LLM08: Vector and Embedding Weaknesses）。** 在 RAG 中，把 vector store 当作 trust boundary：按租户分区 embeddings，让一个用户检索不到另一个人的数据；在索引文档前先校验它们，让被投毒的内容无法左右答案。
-
-```typescript
-// BAD: trusting model output as a command or as markup
-const sql = await llm.generate(`Write SQL for: ${userQuestion}`);
-await db.query(sql);                                   // arbitrary query execution
-container.innerHTML = await llm.reply(userMessage);   // stored XSS, via the model
-
-// GOOD: model output is data — parse defensively, then validate, then encode
-let intent;
-try {
-  intent = CommandSchema.parse(JSON.parse(await llm.replyJson(userMessage)));
-} catch {
-  throw new ValidationError('unexpected model output'); // JSON.parse or schema failed
-}
-await runAllowlistedAction(intent.action, intent.params);
-container.textContent = await llm.reply(userMessage);
-```
-
-## 安全审查检查清单
-
-```markdown
-### Authentication
-- [ ] Passwords hashed with bcrypt/scrypt/argon2 (salt rounds ≥ 12)
-- [ ] Session tokens are httpOnly, secure, sameSite
-- [ ] Login has rate limiting
-- [ ] Password reset tokens expire
-
-### Authorization
-- [ ] Every endpoint checks user permissions
-- [ ] Users can only access their own resources
-- [ ] Admin actions require admin role verification
-
-### Input
-- [ ] All user input validated at the boundary
-- [ ] SQL queries are parameterized
-- [ ] HTML output is encoded/escaped
-- [ ] Server-side URL fetches are allowlisted (no SSRF to internal services)
-- [ ] Delete/move/overwrite targets built from data are checked against an allowlisted root, a minimum depth, and ownership evidence read before the operation
-
-### Data
-- [ ] No secrets in code or version control
-- [ ] Sensitive fields excluded from API responses
-- [ ] PII encrypted at rest (if applicable)
-- [ ] Personal data is classified, collected against a stated purpose, and minimized
-- [ ] Personal data has a retention limit and a working deletion path (incl. backups/indexes)
-- [ ] Export/delete (data-subject) requests are supported where required; sharing with third parties has consent
-
-### Infrastructure
-- [ ] Security headers configured (CSP, HSTS, etc.)
-- [ ] CORS restricted to known origins
-- [ ] Dependencies audited for vulnerabilities
-- [ ] Error messages don't expose internals
-
-### Supply Chain
-- [ ] One authoritative lockfile committed; CI uses that manager's frozen/immutable install
-- [ ] Native audit triaged by reachability and fix risk; dependency install scripts blocked unless explicitly approved
-- [ ] New dependencies reviewed (ownership, provenance, release age, transitive graph)
-
-### AI / LLM (if used)
-- [ ] Model output treated as untrusted (no eval/SQL/innerHTML/shell)
-- [ ] Secrets and other users' data kept out of prompts
-- [ ] Tool/agent permissions scoped; destructive actions require confirmation
-```
-## 另请参阅
-
-详细的 security checklists 和 pre-commit 验证步骤见 `../../references/security-checklist.md`。
+签字之前，走一遍 `../../references/security-checklist.md`：它覆盖身份认证、授权、输入、数据保护与隐私、headers 与 CORS、依赖与供应链、AI/LLM 和错误处理，外加 OWASP 速查表。
 
 ## 常见合理化借口
 

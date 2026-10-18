@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "agent-skills",
-      "version": "0.6.9",
+      "version": "0.6.13",
       "source": {
         "source": "github",
         "repo": "vinvcn/addyosmani-agent-skills-zh"

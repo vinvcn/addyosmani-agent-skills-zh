@@ -91,5 +91,5 @@ describe('[Module/Function name]', () => {
 ## 组合方式
 
 - **Invoke directly when:** 用户要求 test design、coverage analysis，或为某个具体 bug 编写 Prove-It test。
-- **Invoke via:** `/test`（TDD workflow）或 `/ship`（与 `code-reviewer` 和 `security-auditor` 并行 fan-out 做 coverage gap analysis）。
+- **Invoke via:** `/ship`（与 `code-reviewer` 和 `security-auditor` 并行 fan-out 做 coverage gap analysis）。`/test` 在主会话中运行 `test-driven-development` skill，不会 spawn 这个 persona。
 - **Do not invoke from another persona.** 添加 tests 的 recommendations 应放在你的报告中；用户或 slash command 决定何时执行。参见 [docs/agents.md](../docs/agents.md)。

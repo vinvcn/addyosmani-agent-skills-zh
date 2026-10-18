@@ -121,6 +121,14 @@ Yes / no / refine?
 
 如果用户纠正你，把纠正折进去再复述一遍。循环，直到你拿到一个明确的 yes。
 
+### Step 6: 终止回合与停止规则（CRITICAL）
+
+当用户用明确的 "yes" 确认意图陈述时：
+
+1. **交付已确认的意图陈述。**
+2. **提供下游路径**（主动提出保存到 `docs/intent/[topic].md`、用 `spec-driven-development` 起草 spec，或在 spec 之后进入任务规划）。
+3. **立即停止你的回合。** 不要在本回合调用工具或启动下游工作。把控制权交还给用户，让他选择下一步。
+
 ### 95% 置信度停止条件
 
 当你能够对这个问题回答 yes 时，就结束了：
@@ -204,6 +212,7 @@ Agent: <continues>
 - 一个问题没附上你的假设：那是做 survey，不是在下注
 - 把 "whatever you think is best" 当成最终答案接受下来
 - 在用户明确确认你的复述之前，就产出 spec、计划或任务清单
+- 一得到意图确认就调用工具或启动下游工作，而不是停止回合
 - 用 "what would be best practice?" 而不是 "what do you actually want?" 来框架问题
 - 用户给出一个彰显品味/资历的答案（"scalable"、"clean"、"modern"），你不追问这是否是他真正想要的就接受了
 - 三轮过后你的置信度没有可见的上升：你在问错问题，退一步重新框架
@@ -222,4 +231,5 @@ Agent: <continues>
 - [ ] 一次具体的复述（Outcome / User / Why now / Success / Constraint / Out of scope）被写回给了用户
 - [ ] 用户用明确的 yes 确认了复述（不是 "whatever you think"，不是 "sounds good"，不是沉默）
 - [ ] 在停止点上，agent 能预测它对接下来三个问题的反应
+- [ ] 收到明确确认后，立即停止回合，没有调用工具或启动下游工作
 - [ ] 任何向下游 skill（`idea-refine`、`spec-driven-development`）的交接，都是以确认后的意图来表述的，而不是最初那个信息不全的请求

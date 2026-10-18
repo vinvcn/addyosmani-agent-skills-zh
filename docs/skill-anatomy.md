@@ -31,6 +31,7 @@ description: Guides agents through [task/workflow]. Use when [specific trigger c
 **Rules:**
 - `name`: 小写、hyphen-separated。必须与目录名匹配。
 - `description`: 先用第三人称说明 skill 做什么，再包含一个或多个清晰的 "Use when" 触发条件。要同时包含 *what* 和 *when*。最多 1024 个字符。
+- 顶层 key 仅限 [Agent Skills specification](https://agentskills.io) 的字段：`name`、`description`、`license`、`compatibility`、`metadata` 和 `allowed-tools`。厂商或运行时控制项（如 `model`、`tools`、`max_turns`、`context`）应放到 `metadata` 下或 per-agent adapter 文件里；见 [docs/advanced-per-agent-configuration.md](advanced-per-agent-configuration.md)。校验器会拒绝任何其他顶层 key。
 
 已发布的名称是兼容性标识符。特别是，`browser-testing-with-devtools` 是稳定的上游名称，因为其他 skills 会直接引用它。下游 catalog 可以重命名它，但 alias 或迁移映射由那个 catalog 负责；仅下游使用的 aliases 不在本仓库维护。
 
@@ -149,6 +150,20 @@ Skills 按需加载：启动时进入上下文的只有 skill 名称和 descript
 4. **Anti-rationalization.** 每个容易被跳过的步骤都需要在 rationalizations table 中有反驳。
 5. **Progressive disclosure.** 主 SKILL.md 是入口点。Supporting files 只在需要时加载。
 6. **Token-conscious.** 每个 section 都必须证明自己值得保留。如果移除它不会改变 agent 行为，就移除它。
+7. **Model-neutral.** 写流程，不写变通方案。见 [写流程，不写变通方案](#写流程不写变通方案)。
+
+## 写流程，不写变通方案
+
+本仓库的 skills 会跑在很多 agent 和很多代模型上。一个只因某个模型会把某个特定调用搞错而存在的步骤，在其他所有模型上都是负担：它会约束那些本可以直接解决任务的 agent，也会消耗掉更强的模型本该用于实际工作的轮次。跨模型迁移的测量结果（[WikiSkill, arXiv:2608.27454](https://arxiv.org/abs/2608.27454)）表明，针对某一个模型的执行失误编写的 skills 会让更强的模型表现*比完全没有 skill 还差*。
+
+**规则：** 如果一个步骤在不点出某个模型、某个模型版本、或某个 agent 的私有工具名的情况下无法自证其必要性，它属于 issue，不属于 skill。要描述能力（“运行聚焦的测试命令”、“写入这个文件”），而不是某一个运行时恰好暴露出来的机制（`run_command`、`write_to_file`）。
+
+提出 skill 内容之前，有两个味道需要检查：
+
+- **过度具体的机制。** 在只陈述目标就够的地方，却规定死确切的命令形式或序列化细节。如果理由是“否则模型 X 会搞错”，那是变通方案，不是流程。
+- **碎片化的诊断。** 多步骤的检查序列，而其中一步就能确认同一件事。每一个额外步骤都要花轮次，而轮次预算是有限的。
+
+这说的是 skill *内容*；`references/` *路径* 的可移植性是另一个问题（见 [Shared References](#shared-references)）。
 
 ## 命名约定
 

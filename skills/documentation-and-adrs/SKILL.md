@@ -51,7 +51,7 @@ ADR 捕捉重大技术决策背后的推理。它们是你能写出的最高价�
 # ADR-001: Use PostgreSQL for primary database
 
 ## Status
-Accepted | Superseded by ADR-XXX | Deprecated
+Proposed | Accepted | Superseded by ADR-XXX | Deprecated
 
 ## Date
 2025-01-15
@@ -256,6 +256,14 @@ How to contribute, coding standards, PR process.
 - **ADRs** — 帮助 agent 理解过去决策的原因（避免重复决策）
 - **Inline gotchas** — 防止 agent 掉入已知陷阱
 
+## 文字审阅
+
+技术内容检查完之后，再为将来使用这份文档的人审阅文字。更清晰的措辞绝不能改变决策本身或其限制。
+
+1. 标出那些改动后必须存活下来的细节：名称、数字和单位、命令、路径、链接、条件、取舍，以及不确定之处。拿它们和可用的代码及决策上下文核对；凡是你无法证实的，都标记出来。
+2. 用读者真正需要的具体信息，替换掉套话式开头、宣传式形容词和重复的总结。不要用一个编造的示例或更强的保证，去替换一个没有支撑的说法。保留必要的技术性重复，以及项目既有的术语。
+3. 把改后的文档和原文及其来源做对比。恢复任何丢失的限定语或注意事项，验证命令和代码示例仍能按文档所述工作，并解释任何未解决的事实问题，而不是把它打磨掉。
+
 ## 常见合理化借口
 
 | 合理化借口 | 现实 |
@@ -286,3 +294,4 @@ How to contribute, coding standards, PR process.
 - [ ] 已知陷阱在重要位置以内联方式记录
 - [ ] 没有保留注释掉的代码
 - [ ] Rules files（CLAUDE.md 等）是最新且准确的
+- [ ] 文字改动保留了来源细节、决策取舍和限定语，且没有添加无支撑的保证

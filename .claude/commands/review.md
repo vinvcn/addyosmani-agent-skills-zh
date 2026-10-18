@@ -12,5 +12,5 @@ description: 执行五轴 code review — correctness、readability、architectu
 4. **Security** — 输入是否验证？secrets 是否安全？auth 是否检查？（使用 security-and-hardening skill）
 5. **Performance** — 是否没有 N+1 queries？是否没有 unbounded ops？（使用 performance-optimization skill）
 
-将 findings 分类为 Critical、Important 或 Suggestion。
+将 findings 分类为 Critical、Required、Optional 或 Nit。
 输出结构化 review，包含具体 file:line references 和 fix recommendations。

@@ -2,7 +2,7 @@
 
 如何引入 agent-skills，很大程度上取决于你的代码库处于生命周期的哪个阶段。一个全新项目（greenfield）可以从第一次提交开始就采用完整的生命周期。而一个有多年历史的代码库则需要一条渐进式的道路，要尊重已经存在的东西：它的约定、它未被记录的决策，以及那些你在没有测试覆盖的地方不敢盲目触碰的角落。
 
-本指南覆盖这两条路径。安装机制参见 [getting-started.md](getting-started.md) 和各工具的 setup 指南。每个 skill 做什么，参见 [README 中的 skill catalog](../README.md#全部-24-个-skills)。
+本指南覆盖这两条路径。安装机制参见 [getting-started.md](getting-started.md) 和各工具的 setup 指南。每个 skill 做什么，参见 [README 中的 skill catalog](../README.md#全部-25-个-skills)。
 
 ---
 

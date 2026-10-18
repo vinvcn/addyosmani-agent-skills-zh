@@ -45,12 +45,12 @@ description: 优化应用的前端、后端、查询和数据库性能。当存�
 - **RUM（web-vitals library、CrUX）：** 真实条件下的真实用户数据。要验证一次修复确实改善了用户体验，这是必需的。
 
 **前端：**
-```bash
-# Synthetic: Lighthouse in Chrome DevTools (or CI)
-# Chrome DevTools → Performance tab → Record
-# Chrome DevTools MCP → Performance trace
+```javascript
+// Synthetic: Lighthouse in Chrome DevTools (or CI)
+// Chrome DevTools → Performance tab → Record
+// Chrome DevTools MCP → Performance trace
 
-# RUM: Web Vitals library in code
+// RUM: Web Vitals library in code
 import { onLCP, onINP, onCLS } from 'web-vitals';
 
 onLCP(console.log);
@@ -59,12 +59,12 @@ onCLS(console.log);
 ```
 
 **后端：**
-```bash
-# Response time logging
-# Application Performance Monitoring (APM)
-# Database query logging with timing
+```javascript
+// Response time logging
+// Application Performance Monitoring (APM)
+// Database query logging with timing
 
-# Simple timing
+// Simple timing
 console.time('db-query');
 const result = await db.query(...);
 console.timeEnd('db-query');
@@ -118,252 +118,23 @@ What is slow?
 | CPU 尖峰 | 同步的重计算、正则回溯 | CPU profiling |
 | 高延迟 | 缺少缓存、冗余计算、网络跳数 | 沿调用栈 trace 请求 |
 
-### 步骤 3: 修复常见反模式
+### 步骤 3: 修复瓶颈
 
-#### N+1 Queries（后端）
+只修 Step 2 识别出的那一件事，别的都不动。下面的 anti-pattern 是常见嫌疑对象；每一条给出规则和识别它的特征，并链接到 [references/optimization-patterns.md](references/optimization-patterns.md) 中的可落地修复。在真正读到那段代码时，再打开你需要的那一节 —— 不要提前打开。
 
-```typescript
-// BAD: N+1 — one query per task for the owner
-const tasks = await db.tasks.findMany();
-for (const task of tasks) {
-  task.owner = await db.users.findUnique({ where: { id: task.ownerId } });
-}
+**Backend**
 
-// GOOD: Single query with join/include
-const tasks = await db.tasks.findMany({
-  include: { owner: true },
-});
-```
+- **N+1 查询。** 每行一次查询是最常见的后端瓶颈。在同一个查询里取回关联（join/include），而不是在循环里取。[模式](references/optimization-patterns.md#n1-查询后端)
+- **无界数据获取。** 每个列表 endpoint 都用 limit 加稳定的 order 做分页。[模式](references/optimization-patterns.md#无界数据获取)
+- **无视自身索引的查询。** "加个索引"是猜测；`EXPLAIN ANALYZE` 才是测量。在你预期有索引的地方出现 `Seq Scan`、估算 `rows=` 差了一个数量级、scan 上方有 `Sort` 节点 —— 各对应一种不同的修法；`rows=` 估算不准说明统计信息过期，该做的是运行 `ANALYZE` 而不是加索引。按查询的形状建索引（等值列在前，范围或排序列在后）。普通索引对低选择性主导值上的查询（罕见值才适合 partial index）、前导通配符（需要 trigram 或 full-text）或施加在列上的函数（给表达式建索引，如 `WHERE lower(email) = ?`）都无能为力，而且每个索引都会对每次写入抽税。之后重跑执行计划；没改变计划的索引就该 revert。[模式](references/optimization-patterns.md#无视自身索引的查询)
+- **连接池耗尽。** 特征：*所有* endpoint 同时变慢，时间花在等连接而不是执行上，数据库显示大量空闲 sessions。每个进程一个 pool，按 `instances × max` 不超过数据库连接上限来定大小。更大不等于更快；它只是把队列挪到数据库那边 —— 那里更难看见。当实例数量无上限（serverless、autoscaling）时，通过代理复用连接（pgbouncer、RDS Proxy），而不是调高 `max`。[模式](references/optimization-patterns.md#连接池耗尽)
+- **缺少缓存。** 缓存那些产出昂贵、且读取频率远高于变化的东西；缓存一个本来就快的查询，只换来一跳网络和一个 staleness bug，别的什么都没有。有意识地选择层级（进程内、共享、CDN）。每个会改变响应的输入都要进 key（tenant、locale、permissions、feature flags）：一个省略了查看者的 key，就是 A 用户的数据被发给 B 用户的方式。选一种 invalidation 策略（TTL、基于事件或 tag、版本化 keys），并明确说出可接受的 staleness 窗口。给热点 key 防 stampede：在单个请求重算的同时继续提供 stale 数据，或把并发 miss 合并到一个 in-flight promise 后面。绝不缓存必须新鲜的东西（余额、permissions、结账时的库存）。[模式](references/optimization-patterns.md#缺少缓存后端)；请求合并、写入策略和 negative caching 见 `../../references/performance-checklist.md`。
 
-#### Unbounded Data Fetching
+**Frontend**
 
-```typescript
-// BAD: Fetching all records
-const allTasks = await db.tasks.findMany();
-
-// GOOD: Paginated with limits
-const tasks = await db.tasks.findMany({
-  take: 20,
-  skip: (page - 1) * 20,
-  orderBy: { createdAt: 'desc' },
-});
-```
-
-#### Queries That Ignore Their Index
-
-"加个索引"是猜测。查询计划才是测量：
-
-```sql
-EXPLAIN ANALYZE
-SELECT id, title FROM tasks
-WHERE owner_id = 42 ORDER BY created_at DESC LIMIT 20;
-```
-
-输出里的三样东西决定怎么修：
-
-| 你看到什么 | 它意味着什么 |
-|---|---|
-| 在你预期有索引的大表上出现 `Seq Scan` | 这个谓词没有可用的索引 |
-| 估算的 `rows=` 与实际相差一个数量级 | 统计信息过期；planner 基于错误信息做选择 |
-| scan 之上有一个 `Sort` 节点 | 索引覆盖了过滤条件，但没覆盖 `ORDER BY` |
-
-按**查询的形状**建索引，而不是孤立地看某一列。在复合索引里，等值列在前，范围或排序列在后：
-
-```sql
-CREATE INDEX idx_tasks_owner_created ON tasks (owner_id, created_at DESC);
-```
-
-**索引帮不上忙的情况：**
-
-| 情形 | 原因 |
-|---|---|
-| 低选择性，查询占主导的值（一个 95% 都是 `active` 的 `status` 列，且过滤条件就是 `active`） | 顺序扫描确实更便宜，planner 会忽略索引。反过来，过滤罕见值时结论相反，此时 partial index 非常合适 |
-| 前导通配符（`LIKE '%term'`） | B-tree 没有前缀就无法 seek；需要 trigram 或 full-text |
-| 列上有函数（`WHERE lower(email) = ?`） | 普通列索引不可用；改为对该表达式建索引 |
-| 写多的表 | 每个索引都是对每次 `INSERT`/`UPDATE` 的抽税；要测写入成本，不能只看读取收益 |
-
-之后重跑一次 `EXPLAIN ANALYZE`。一个没改变执行计划的索引应当 revert（Step 4），而且它并不免费：每次写入它都在付出成本。
-
-#### Connection Pool Exhaustion
-
-Signature 很有辨识度：**所有** endpoints 同时变慢，慢的时间花在等连接而不是执行上，数据库则报告大量空闲 sessions。
-
-```typescript
-// BAD: a pool per request or per module — under serverless this multiplies
-// by instance count and exhausts the database's connection limit
-// GOOD: one pool per process, sized against the database's ceiling
-const pool = new Pool({
-  max: 10,                        // instances × max must stay under max_connections
-  idleTimeoutMillis: 30_000,
-  connectionTimeoutMillis: 5_000, // fail fast instead of queueing forever
-});
-```
-
-**更大不等于更快。** 比数据库实际能并发执行的数量还大的 pool，只是把队列从你的应用挪到数据库里 —— 那里更难看见。当实例数量无上限（serverless、autoscaling）时，解法是一个做连接复用的代理（pgbouncer、RDS Proxy），而不是调高 `max`。
-
-#### Missing Image Optimization（前端）
-
-```html
-<!-- BAD: No dimensions, no format optimization -->
-<img src="/hero.jpg" />
-
-<!-- GOOD: Hero / LCP image — art direction + resolution switching, high priority -->
-<!--
-  Two techniques combined:
-  - Art direction (media): different crop/composition per breakpoint
-  - Resolution switching (srcset + sizes): right file size per screen density
--->
-<picture>
-  <!-- Mobile: portrait crop (8:10) -->
-  <source
-    media="(max-width: 767px)"
-    srcset="/hero-mobile-400.avif 400w, /hero-mobile-800.avif 800w"
-    sizes="100vw"
-    width="800"
-    height="1000"
-    type="image/avif"
-  />
-  <source
-    media="(max-width: 767px)"
-    srcset="/hero-mobile-400.webp 400w, /hero-mobile-800.webp 800w"
-    sizes="100vw"
-    width="800"
-    height="1000"
-    type="image/webp"
-  />
-  <!-- Desktop: landscape crop (2:1) -->
-  <source
-    srcset="/hero-800.avif 800w, /hero-1200.avif 1200w, /hero-1600.avif 1600w"
-    sizes="(max-width: 1200px) 100vw, 1200px"
-    width="1200"
-    height="600"
-    type="image/avif"
-  />
-  <source
-    srcset="/hero-800.webp 800w, /hero-1200.webp 1200w, /hero-1600.webp 1600w"
-    sizes="(max-width: 1200px) 100vw, 1200px"
-    width="1200"
-    height="600"
-    type="image/webp"
-  />
-  <img
-    src="/hero-desktop.jpg"
-    width="1200"
-    height="600"
-    fetchpriority="high"
-    alt="Hero image description"
-  />
-</picture>
-
-<!-- GOOD: Below-the-fold image — lazy loaded + async decoding -->
-<img
-  src="/content.webp"
-  width="800"
-  height="400"
-  loading="lazy"
-  decoding="async"
-  alt="Content image description"
-/>
-```
-
-#### Unnecessary Re-renders (React)
-
-```tsx
-// BAD: Creates new object on every render, causing children to re-render
-function TaskList() {
-  return <TaskFilters options={{ sortBy: 'date', order: 'desc' }} />;
-}
-
-// GOOD: Stable reference
-const DEFAULT_OPTIONS = { sortBy: 'date', order: 'desc' } as const;
-function TaskList() {
-  return <TaskFilters options={DEFAULT_OPTIONS} />;
-}
-
-// Use React.memo for expensive components
-const TaskItem = React.memo(function TaskItem({ task }: Props) {
-  return <div>{/* expensive render */}</div>;
-});
-
-// Use useMemo for expensive computations
-function TaskStats({ tasks }: Props) {
-  const stats = useMemo(() => calculateStats(tasks), [tasks]);
-  return <div>{stats.completed} / {stats.total}</div>;
-}
-```
-
-#### Large Bundle Size
-
-```typescript
-// Modern bundlers (Vite, webpack 5+) handle named imports with tree-shaking automatically,
-// provided the dependency ships ESM and is marked `sideEffects: false` in package.json.
-// Profile before changing import styles — the real gains come from splitting and lazy loading.
-
-// GOOD: Dynamic import for heavy, rarely-used features
-const ChartLibrary = lazy(() => import('./ChartLibrary'));
-
-// GOOD: Route-level code splitting wrapped in Suspense
-const SettingsPage = lazy(() => import('./pages/Settings'));
-
-function App() {
-  return (
-    <Suspense fallback={<Spinner />}>
-      <SettingsPage />
-    </Suspense>
-  );
-}
-```
-
-#### Missing Caching（后端）
-
-缓存那些产出昂贵、且读取频率远高于变化的东西。缓存一个本来就快的查询，换来的只是一跳网络、一个 staleness bug 和一套要维护的淘汰策略 —— 别的什么都没有。
-
-**有意识地选择层级：**
-
-| 层级 | 对谁可见 | 何时使用 | 代价 |
-|---|---|---|---|
-| 进程内（`Map`、LRU） | 单个实例 | 数据小、热度高，可接受按实例各自 stale | 每个实例各自漂移；invalidation 只能触达一个实例 |
-| 共享（Redis、Memcached） | 所有实例 | 实例之间必须一致，或值的重算成本很高 | 一跳网络，外加一个要运行和监控的服务 |
-| CDN / edge | 所有人，按 URL | 响应是公开的，且对给定 key 完全相同 | Invalidation 是难点；假定你无法快速撤回一个坏响应 |
-
-```typescript
-// Cache frequently-read, rarely-changed data
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-let cachedConfig: AppConfig | null = null;
-let cacheExpiry = 0;
-
-async function getAppConfig(): Promise<AppConfig> {
-  if (cachedConfig && Date.now() < cacheExpiry) {
-    return cachedConfig;
-  }
-  cachedConfig = await db.config.findFirst();
-  cacheExpiry = Date.now() + CACHE_TTL;
-  return cachedConfig;
-}
-
-// HTTP caching headers for static assets
-app.use('/static', express.static('public', {
-  maxAge: '1y',           // Cache for 1 year
-  immutable: true,        // Never revalidate (use content hashing in filenames)
-}));
-
-// Cache-Control for API responses
-res.set('Cache-Control', 'public, max-age=300'); // 5 minutes
-```
-
-**Key 的设计决定正确性。** 每个会改变响应的输入都要进 key：tenant、locale、permissions、feature flags。一个省略了查看者的 key，就是 A 用户的数据被发给 B 用户的方式 —— 而且这种事故往往是以"性能提升"的姿态上线的。
-
-**选一种 invalidation 策略，不要三种都上：**
-
-| 策略 | 取舍 |
-|---|---|
-| TTL | 最简单。你接受最多一个 TTL 的 staleness，所以明确说出可接受的时间窗口 |
-| 基于事件或 tag | 写入即新鲜，但写入方从此必须了解缓存拓扑 |
-| 版本化 keys（`user:42:profile:v7`） | 从不 invalidate，只是不再读旧 key。在淘汰之前会占用内存 |
-
-**防住 stampede。** 一个热点 key 过期，所有并发请求一起 miss，origin 瞬间承受全部负载 —— 这就是缓存从"防事故"变成"造事故"的方式。在单个请求重算的同时继续提供 stale 数据（`stale-while-revalidate`），或把并发 miss 合并到一个 in-flight promise 后面，让 N 个等待者只触发一次重算。
-
-**不要缓存：** 任何 staleness 会构成 correctness bug 的东西（余额、permissions、结账时的库存），或者放在一个不能标识用户的 key 下的按用户数据。请求合并、写入策略、negative caching 和 cache checklist 见 `../../references/performance-checklist.md`。
+- **缺少图片优化。** 每张图片都声明 `width` 和 `height`（CLS）。LCP 图片用 `fetchpriority="high"`、通过 `<picture>` 使用现代格式（AVIF、WebP）、用 `srcset`/`sizes` 做分辨率切换；首屏外的图片用 `loading="lazy"` 和 `decoding="async"`。[模式](references/optimization-patterns.md#缺少图片优化前端)
+- **不必要的 re-render。** 在渲染过程中创建的对象或函数每次都是新引用，会让每个接收它的子组件 re-render。把常量提升；`React.memo` 和 `useMemo` 只留给 profile 显示真正昂贵的工作，因为滥用本身就是成本。[模式](references/optimization-patterns.md#不必要的-re-renderreact)
+- **bundle 体积过大。** 现代 bundler 会自行对 ESM 命名导入做 tree-shaking；真正的收益来自路由级 code splitting 和把重型、很少使用的功能懒加载到 `Suspense` 之后。改导入风格之前先 profile。[模式](references/optimization-patterns.md#bundle-体积过大)
 
 ### 步骤 4: 验证（保留或回退）
 
@@ -393,7 +164,7 @@ res.set('Cache-Control', 'public, max-age=300'); // 5 minutes
 被 revert 的工作在 git history 里不留痕迹，而这正是同一个死点子下季度又被试一遍的原因。保留一份简短的台账，让被丢弃的点子继续被丢弃：
 
 | 点子 | Baseline → 结果 | 结论 | 原因 |
-|---|---|---|---|
+|---|---|---|
 | 给行组件加 memoize | INP 240ms → 235ms | reverted | 在噪声内（±15ms）。瓶颈不在行上。 |
 | 列表虚拟化 | INP 240ms → 90ms | kept | Trace 里的 long tasks 消失了。 |
 | Preconnect 到 API origin | LCP 2.8s → 2.8s | reverted | 本来就是 same-origin。 |

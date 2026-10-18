@@ -79,7 +79,7 @@ export function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
 ```tsx
 // Container: handles data
 export function TaskListContainer() {
-  const { tasks, isLoading, error } = useTasks();
+  const { tasks, isLoading, error, refetch } = useTasks();
 
   if (isLoading) return <TaskListSkeleton />;
   if (error) return <ErrorState message="Failed to load tasks" retry={refetch} />;
@@ -114,6 +114,17 @@ Global store (Zustand, Redux)    → Complex client state shared app-wide
 **不要让 props 穿透超过 3 层。** 如果你在不使用这些 props 的组件之间层层传递，就引入 context 或重构组件树。
 
 ## 遵循设计系统
+
+### 参考驱动的 UI 质量
+
+当产品需要一种独特的视觉方向时，先收集证据，再选定布局：
+
+1. 搜索一份可信的参考目录，或使用产品团队提供的参考。
+2. 研究两到三个相关界面。记录关于层级、密度、导航、控件、响应式行为和交互状态的决策。
+3. 在实现之前，把这些决策浓缩成一份简短的设计契约。写下这个界面的职责、主操作、必需状态、响应式规则，以及要拒绝的模式。
+4. 用产品自己的组件、token、内容和视觉语言，重建其中有用的结构。绝不照搬其他产品的品牌、专有文案、图像或精确布局。
+
+把参考当作证据，而不是模板。如果拿不到参考，把你的假设记录下来，并对照产品既有的设计系统验证结果。
 
 ### 避开 AI 审美
 
@@ -323,6 +334,7 @@ function useToggleTask() {
 - [ ] 所有可交互元素都支持键盘访问（用 Tab 键遍历页面）
 - [ ] 屏幕阅读器能传达页面的内容和结构
 - [ ] 响应式：在 320px、768px、1024px、1440px 均正常
-- [ ] 加载、错误和空状态全部处理
+- [ ] 加载、空状态、错误、成功和权限状态在适用时全部处理
 - [ ] 遵循项目的设计系统（间距、颜色、排版）
+- [ ] 最终渲染结果通过一次 UI 专属的收尾审查（finish-gate review）
 - [ ] dev tools 或 axe-core 中没有可访问性告警

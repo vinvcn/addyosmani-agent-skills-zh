@@ -2,6 +2,8 @@
 
 如何用当前受支持的项目上下文机制，把 [agent-skills](../README.md) 接入 **Cursor** —— 而不是过时的单体文件或 Kaizen 专属布局。
 
+本指南中的每个 `.cursor/` 路径都位于**你自己的**项目里（用户作用域则在 `~/.cursor/` 下）。本仓库并不附带 `.cursor/` 目录：你需要自己创建它、把 skills 同步进去，这正是[第 1 步](#1-把-skills-安装到-cursorskills)做的事。
+
 ---
 
 ## Cursor 目前支持什么
@@ -205,6 +207,7 @@ globs: "**/*.{ts,tsx}"
 | workflow 过时 | 从 `agent-skills/skills/` 重新 `rsync` |
 | instructions 重复 | 从 rules 里移除 skill 内容；只保留一个来源 |
 | 选错了 skill | 收窄自定义 skills 的 `description`；在 chat 里点名提醒 |
+| 通过 `/` 挂上某个 skill 后立刻出现 "An unexpected error occurred on our servers"，且该会话中后续每条消息也都失败 | Cursor 侧的已知问题，在 [#494](https://github.com/addyosmani/agent-skills/issues/494) 中跟踪：Cursor 会把挂上的 `SKILL.md` 拉进请求，失败发生在它那一侧，而不是 skill 本身。新开一个会话，并用纯文本按名字引用该 skill（例如 “Use the test-driven-development skill to …”），而不是挂附它。 |
 
 ---
 

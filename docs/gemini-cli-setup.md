@@ -93,7 +93,7 @@ cat /path/to/agent-skills/skills/code-review-and-quality/SKILL.md >> GEMINI.md
 
 Gemini CLI 支持 session lifecycle hooks。你可以用它们在 session 开始时自动注入上下文或运行验证脚本。
 
-要复刻其他工具中的 `agent-skills` 体验，可以配置一个 `SessionStart` hook，用来提醒可用 skills 或加载一个 meta-skill。
+要复刻其他工具中的 `agent-skills` 体验，可以配置一个 `SessionStart` hook，用来提醒可用 skills 或加载一个 meta-skill。本仓库的 `hooks/session-start.sh` 就是一个现成脚本：它在 stdout 上以标准 `SessionStart` JSON envelope 打印 `using-agent-skills` meta-skill。
 
 ### Explicit Context Loading
 

@@ -34,9 +34,9 @@
 ### Slash command（背后单个 persona）
 当存在一个可重复的 workflow、否则每次都要重新解释时，选这个。
 
-- `/review` → 把项目的 review skill 包在 `code-reviewer` 外面
-- `/test` → 把 TDD skill 包在 `test-engineer` 外面
 - `/webperf` → 把 `web-performance-auditor` 包起来，用于 web 应用偏性能的审计
+
+`/review` 和 `/test` 不是 persona wrapper。它们在主会话中运行 `code-review-and-quality` 和 `test-driven-development` skills，也就是对话上下文所在的会话。若要在全新上下文中拿到 `code-reviewer` 或 `test-engineer`，请直接调用该 persona，或运行 `/ship`。
 
 ### Slash command（orchestrator —— fan-out）
 只有当**互相独立**的调查可以并行运行、并且产出的报告随后由单个 agent 合并时，才选这个。

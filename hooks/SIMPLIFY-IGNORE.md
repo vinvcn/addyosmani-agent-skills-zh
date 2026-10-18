@@ -1,10 +1,10 @@
 # simplify-ignore hook
 
-面向 `/code-simplify` 的 block-level protection。标记绝不能被简化的代码；模型将看不到它。
+Block-level protection for `/code-simplify`. Mark code that should never be simplified — the model won't see it.
 
-## 设置
+## Setup
 
-1. 标注你想保护的 blocks：
+1. Annotate blocks you want to protect:
 
 ```js
 /* simplify-ignore-start: perf-critical */
@@ -16,7 +16,7 @@ result[3] = buf[3] ^ key[3];
 /* simplify-ignore-end */
 ```
 
-2. 将 hooks 添加到 `.claude/settings.json`：
+2. Add hooks to `.claude/settings.json`:
 
 ```json
 {
@@ -42,23 +42,23 @@ result[3] = buf[3] ^ key[3];
 }
 ```
 
-3. 运行 `/code-simplify`，protected blocks 会变成 `/* BLOCK_de115a1d: perf-critical */` placeholders。模型可以围绕周边代码推理，但看不到受保护的实现。
+3. Run `/code-simplify` — protected blocks become `/* BLOCK_de115a1d: perf-critical */` placeholders. The model reasons about surrounding code without seeing the protected implementation.
 
-> **注意：** 该 hook 会将临时 backups 存储在 `.claude/.simplify-ignore-cache/`。请确保此路径位于 `.gitignore` 中。
+> **Note:** The hook stores temporary backups in `.claude/.simplify-ignore-cache/`. Make sure this path is in your `.gitignore`.
 
-## 工作方式
+## How it works
 
-一个脚本处理三个 hook events：
+One script, three hook events:
 
-| 事件 | 操作 |
+| Event | Action |
 |---|---|
-| `PreToolUse Read` | 备份文件，并就地将 blocks 替换为 `BLOCK_<hash>` placeholders |
-| `PostToolUse Edit\|Write` | 将 placeholders 展开回真实代码，保存模型的变更，然后再次过滤 |
-| `Stop` | session 结束时从 backups 恢复所有文件 |
+| `PreToolUse Read` | Backs up file, replaces blocks with `BLOCK_<hash>` placeholders in-place |
+| `PostToolUse Edit\|Write` | Expands placeholders back to real code, saves model's changes, re-filters |
+| `Stop` | Expands the placeholders left in each file on disk, so changes made outside `Edit`/`Write` survive; keeps a file that was put back whole (a `git checkout`/`stash` revert, an undo) instead of the stale backup; falls back to the backup only if no placeholder is left |
 
-每个 block 都会做内容 hash（通过 `shasum`/`sha1sum` 取 8 个十六进制字符），因此即使模型复制或重排 placeholders，往返恢复也不会有歧义。Cache 按项目隔离，以避免跨 session 干扰。
+Each block is content-hashed (8 hex chars via `shasum`/`sha1sum`) so the round-trip is unambiguous even if the model duplicates or reorders placeholders. Cache is project-scoped to prevent cross-session interference.
 
-## 标注语法
+## Annotation syntax
 
 ```js
 /* simplify-ignore-start */           // basic — hides the block
@@ -66,25 +66,27 @@ result[3] = buf[3] ^ key[3];
 /* simplify-ignore-end */
 ```
 
-任意 comment style 都可用（`//`、`/*`、`#`、`<!--`）。支持每个文件多个 blocks，也支持单行 blocks。Placeholders 会保留原始 comment syntax（例如 Python 中的 `# BLOCK_xxx`、HTML 中的 `<!-- BLOCK_xxx -->`）。
+Any comment style works (`//`, `/*`, `#`, `<!--`). Multiple blocks per file and single-line blocks supported. Placeholders preserve the original comment syntax (e.g. `# BLOCK_xxx` for Python, `<!-- BLOCK_xxx -->` for HTML).
 
-## 崩溃恢复
+## Crash recovery
 
-如果 Claude Code 崩溃且没有触发 Stop hook，磁盘上的文件可能仍带着 `BLOCK_<hash>` placeholders。要手动恢复：
+If Claude Code crashes without triggering the Stop hook, files on disk may still have `BLOCK_<hash>` placeholders. To restore manually:
 
 ```bash
 echo '{}' | bash hooks/simplify-ignore.sh
 ```
 
-Backups 存储在你的项目目录内的 `.claude/.simplify-ignore-cache/`。
+Backups are stored in `.claude/.simplify-ignore-cache/` within your project directory.
+If a change is reverted while the hook is active, the superseded session backup is retained there as `<id>.superseded.<pid>`; review it and remove it when it is no longer needed.
 
-## 已知限制
+## Known limitations
 
-- **单行 blocks 会隐藏整行。** 如果 `simplify-ignore-start` 和 `simplify-ignore-end` 与其他代码出现在同一行，整行都会对模型隐藏，而不仅仅是标注的部分。请把标注放在独立行上。
-- **Comment suffix detection 只覆盖 `*/` 和 `-->`。** 使用非标准 comment closers 的模板引擎（ERB `%>`、Blade `--}}`）可能产生不平衡的 placeholders。请改用 `#` 或 `//` 风格的注释。
-- **Fallback expansion 是渐进式的，不是精确匹配。** 如果模型改动了 placeholder 的格式（例如修改了 reason text），hook 会尝试逐步更简单的匹配：完整 placeholder → prefix+hash+suffix → hash-only。hash-only fallback 可能留下外观残留（例如多余的 `:` 或 reason text）。发生这种情况时会向 stderr 打印 warning。
-- **文件重命名会留下 placeholders。** 如果模型通过 shell command 重命名或移动文件，新文件会保留 `BLOCK_<hash>` placeholders。session 停止时，原始代码会另存为 `<old-filename>.recovered`。你必须手动把 recovered code 恢复到新文件中。
+- **Single-line blocks hide the entire line.** If `simplify-ignore-start` and `simplify-ignore-end` appear on the same line as other code, the whole line is hidden from the model, not just the annotated portion. Use dedicated lines for annotations.
+- **Comment suffix detection covers `*/` and `-->` only.** Template engines with non-standard comment closers (ERB `%>`, Blade `--}}`) may produce unbalanced placeholders. Use `#` or `//` style comments instead.
+- **Fallback expansion is progressive, not exact.** If the model alters a placeholder's formatting (e.g. changes the reason text), the hook tries progressively simpler matches: full placeholder → prefix+hash+suffix → hash-only. The hash-only fallback may leave cosmetic debris (e.g. stray `:` or reason text). A warning is printed to stderr when this happens.
+- **A removed placeholder falls back to the backup.** If an edit deletes a `BLOCK_<hash>` line, or something replaces the whole file, the hook can no longer tell where that protected block belongs. An `Edit` or `Write` that does this is reported back to the model (exit 2) with the placeholder to restore, and the backup is not updated. If the placeholder is still missing at `Stop`, the hook restores the backup and prints a warning; the changed file is not lost but is kept in the cache as `.claude/.simplify-ignore-cache/<id>.recovered`, whose path the warning prints, and you merge it back by hand. Changes that leave the placeholders in place — a `Bash` edit, a formatter, an external editor — are kept in the file itself.
+- **File renaming leaves placeholders.** If the model renames or moves a file via a shell command, the new file will retain `BLOCK_<hash>` placeholders. The original code is saved as `<old-filename>.recovered` when the session stops. You must manually restore the recovered code into the new file.
 
-## 要求
+## Requirements
 
-- `jq`、`shasum` 或 `sha1sum`（自动检测）、Bash 3.2+
+- `jq`, `shasum` or `sha1sum` (auto-detected), Bash 3.2+

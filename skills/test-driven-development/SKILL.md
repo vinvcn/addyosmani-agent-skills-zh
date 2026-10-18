@@ -1,6 +1,6 @@
 ---
 name: test-driven-development
-description: 通过 red-green-refactor 循环用测试驱动开发。用于实现任何逻辑、修复任何 bug，或改变任何行为。用于需要证明代码能工作、收到 bug 报告，或即将修改现有功能时。
+description: 通过 red-green-refactor 循环用测试驱动开发。用于实现任何逻辑、修复任何 bug，或改变任何行为。用于需要证明代码能工作、收到 bug 报告，或即将修改现有功能时。用于被要求给一个函数加测试、修它的 bug 或改变其行为时，即使代码被内联粘贴且请求没提到测试。
 ---
 
 # Test-Driven Development

@@ -1,6 +1,6 @@
 ---
 name: code-review-and-quality
-description: 执行多维度代码审查。用于合并任何变更之前；用于审查自己、其他 agent 或人类编写的代码；用于在代码进入主分支前从多个维度评估代码质量。
+description: 执行多维度代码审查。用于合并任何变更之前；用于审查自己、其他 agent 或人类编写的代码；用于在代码进入主分支前从多个维度评估代码质量。用于被要求 review 一个 diff 或 pull request 时，即使 diff 被内联粘贴。
 ---
 
 # 代码审查和质量
@@ -160,6 +160,8 @@ description: 执行多维度代码审查。用于合并任何变更之前；用�
 - Do tests have descriptive names?
 - Would the tests catch a regression if the code changed?
 ```
+
+最后一个问题要用实验回答，而不是靠阅读。把该变更引入的一个条件取反（去掉一个否定、把 `&&` 换成 `||`），跑一遍测试套件，然后从副本恢复文件。一个保持绿色的 mutation 就是一条发现：指出缺失的是哪个测试用例。项目级的 mutation score 见 `constraint-driven-development`。
 
 ### 第 3 步：审查实现
 
