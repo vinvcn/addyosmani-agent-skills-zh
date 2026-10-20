@@ -36,7 +36,7 @@ cd addyosmani-agent-skills-zh
 
 没有构建步骤，也没有 `package.json`；校验器就是普通 Node 脚本。你需要：
 
-- **Node 20+**（CI 使用的版本），用于 `scripts/` 里的校验器
+- **Node 24**（CI 锁定的版本），用于 `scripts/` 里的校验器
 - **bash**（推荐再加 `jq`），用于 hook 回归测试
 - **`gh` CLI**，用于在提议新 skill 前做重复 PR 检查
 - **Claude Code**，仅当你想在本地跑 Tier 3 行为评测时才需要
@@ -49,25 +49,43 @@ claude --plugin-dir /path/to/agent-skills
 
 ## 3. 验证循环
 
-这个仓库吃自己的狗粮：验证对 skills 是不可妥协的，对本仓库的贡献同样不可妥协。CI 跑的一切，你都能在本地几秒内跑完：
+这个仓库吃自己的狗粮：验证对 skills 是不可妥协的，对本仓库的贡献同样不可妥协。CI 中除 Claude Code CLI 之外的一切，你都能在本地几秒内跑完。下面是这一整套，按每项检查覆盖的内容分组（workflow 把它们分散在几个 job 里）：
 
 ```bash
-# Tier 1, structural: frontmatter, naming, required sections
+# Tier 1, structural: frontmatter, naming, required sections, layout and line budget
 node scripts/validate-skills.js
+
+# Links from skills to references/ resolve, including #anchor fragments
+node scripts/validate-reference-links.js
+
+# Every plugin manifest carries the same version
+node scripts/validate-versions.js
 
 # Command parity and description sync across the three command directories
 node scripts/validate-commands.js
 
-# Tier 2, trigger & routing: positive prompts rank top-k, negatives don't collide
-node scripts/run-evals.js
+# Spec/plan/todo artifact paths agree across every command surface and the docs
+node scripts/validate-artifact-paths.js
+
+# Unit tests for the validators and the eval runner
+# (on PowerShell, list the files instead of using the globs)
+node --test scripts/*-test.js scripts/lib/*-test.js
+
+# Tier 2, trigger & routing: positive prompts rank top-k, negatives don't collide.
+# CI enforces the rank-1 floor, so run it the way CI does.
+node scripts/run-evals.js --min-rank1 95
 
 # Tier 3, behavioral (on demand, spends tokens; --dry-run prints the plan)
 node scripts/run-evals.js --behavioral <skill-name> --dry-run
 
-# Hook regression test, required if you touch hooks/session-start.sh
-# or skills/using-agent-skills/SKILL.md
+# Hook regression tests, required if you touch anything under hooks/ or
+# skills/using-agent-skills/SKILL.md (the session-start script embeds that file)
 bash hooks/session-start-test.sh
+bash hooks/sdd-cache-test.sh
+bash hooks/simplify-ignore-test.sh
 ```
+
+CI 会在 Ubuntu 上跑这一整套，然后在 macOS 和 Windows 上再跑一遍校验器和单元测试，这样路径处理和行尾也会被覆盖到。还有两个 job 需要 Claude Code CLI，不在上面的代码块里：`claude plugin validate .` 检查 marketplace 和 plugin manifests，一次 marketplace 安装（`claude plugin marketplace add ./`，然后 `claude plugin install agent-skills@addy-agent-skills --scope user`）则证明 plugin 能从 checkout 装起来。如果你动了 `plugin.json`、`.claude-plugin/` 里的 manifests，或任何安装路径会读取的东西，就把这两个也跑一遍。当 workflow 增加步骤时，这个代码块也该加上同样一行；一旦两者不一致，以 [workflow 文件](../.github/workflows/test-plugin-install.yml) 为准。
 
 三个 eval 层级值得理解，即使你从不碰 harness。因为 Tier 2 变红通常意味着*改好你 skill 的 description*，而不是 eval 有问题：Tier 2 是对路由的词法近似（在 descriptions 上做词干化的 TF-IDF），它的两个目标失败模式是：description 缺少用户实际会说的词汇，以及 description 过宽以至于压过了正确的 skill。完整设计、schema 和信任级别规则见 [evals/README.md](../evals/README.md)。
 
@@ -93,14 +111,15 @@ bash hooks/session-start-test.sh
 
 - 文档和 skills **只有英文**；翻译不被接受，因为它们会漂移（[CONTRIBUTING.md](../CONTRIBUTING.md#翻译) 有理由说明）。
 - 对 `scripts/run-evals.js` 或 eval schema 的改动，应与 skill-creator 的 `evals.json` schema 保持兼容（行为层级逐字采用了该 schema；这种兼容性是设计特性，不是巧合）。
-- 任何涉及 session-start hook 或其内嵌 meta-skill 的改动，都需要跑 hook 回归测试（§3）。
+- 任何涉及 `hooks/` 或 `skills/using-agent-skills/SKILL.md`（session-start 脚本内嵌了该文件）的改动，都需要跑那三个 hook 回归测试（§3）。任何涉及 `scripts/` 的改动，都需要跑它的单元测试。
 
 ## 5. PR 前 checklist
 
-- [ ] Tier 1 绿：`node scripts/validate-skills.js`
-- [ ] Tier 2 绿：`node scripts/run-evals.js`
-- [ ] 若改动了任何 command 目录，command parity 绿：`node scripts/validate-commands.js`
-- [ ] 若改动了 `hooks/` 或 `using-agent-skills`，hook 测试绿
+- [ ] Tier 1 绿：`node scripts/validate-skills.js`；若改动了链接到 `references/` 的 skill，再加 `node scripts/validate-reference-links.js`
+- [ ] Tier 2 绿（按 CI 的跑法）：`node scripts/run-evals.js --min-rank1 95`
+- [ ] 若改动了任何 command 目录，command parity 和 artifact 路径都绿：`node scripts/validate-commands.js` 和 `node scripts/validate-artifact-paths.js`
+- [ ] 若改动了 `scripts/`，单元测试绿：`node --test scripts/*-test.js scripts/lib/*-test.js`
+- [ ] 若改动了 `hooks/` 或 `using-agent-skills`，hook 测试绿：`bash hooks/session-start-test.sh`、`bash hooks/sdd-cache-test.sh`、`bash hooks/simplify-ignore-test.sh`
 - [ ] 新 skill → eval case 文件已存在，且满足 trigger/behavioral 的最低数量
 - [ ] 新 skill → PR 描述中已论证缺口；已检查目录和 open PRs
 - [ ] 没有复制内容；使用了交叉引用

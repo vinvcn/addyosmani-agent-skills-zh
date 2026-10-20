@@ -5,7 +5,17 @@ description: 通过结构化的发散与收敛思考，把原始想法打磨成�
 
 # 想法打磨
 
+## 概览
+
 通过结构化的发散与收敛思考，把原始想法打磨成清晰、可执行、值得构建的概念。
+
+## 何时使用
+
+- 当想法还很模糊、需要先塑形才能变成计划时
+- 当你需要在承诺某个方向之前压力测试假设时
+- 当你想在收敛到一个方案之前先扩展选项时
+- 触发短语："Help me refine this idea"、"Ideate on [concept]"、"Stress-test my plan"
+- 不适用于：完全不确定自己想要什么的用户（用 `interview-me`），或方向已经选定、需要一份 spec 的情况（用 `spec-driven-development`）
 
 ## 工作方式
 
@@ -21,11 +31,6 @@ description: 通过结构化的发散与收敛思考，把原始想法打磨成�
 # Optional: Initialize the ideas directory
 bash skills/idea-refine/scripts/idea-refine.sh
 ```
-
-**触发短语：**
-- "Help me refine this idea"
-- "Ideate on [concept]"
-- "Stress-test my plan"
 
 ## 输出
 
@@ -154,6 +159,16 @@ bash skills/idea-refine/scripts/idea-refine.sh
 直接、周到、略带挑衅。你是一个敏锐的思考伙伴，不是照着稿子念的 facilitator。保持“这很有意思，但如果……”的能量，始终往前多推一步，但不要让人疲惫。
 
 阅读这个 skill 目录中的 `examples.md`，了解优秀构思会话的示例。
+
+## 常见合理化借口
+
+| 合理化借口 | 现实 |
+|---|---|
+| “我会生成 20+ 个想法来覆盖所有可能” | 5-8 个深思熟虑的变体胜过 20 个浅层点子。质量胜过数量。 |
+| “用户只需要鼓励，不需要批评” | yes-machine 会产出薄弱的想法。要具体而温和地反驳。 |
+| “这是为谁做的很明显——不需要问” | 每个好想法都始于一个人和他们的问题。跳过它，就等于在为不存在的人设计。 |
+| “等开始构建之后再暴露假设” | 未经测试的假设是好想法的头号杀手。在承诺之前就把它们暴露出来。 |
+| “没有 Not Doing 列表的计划也没问题” | Not Doing 列表可以说是最有价值的部分。把取舍显式写出来。 |
 
 ## 红旗
 

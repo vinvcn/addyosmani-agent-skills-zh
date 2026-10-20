@@ -21,8 +21,9 @@ Skills 会编码资深工程师构建软件时使用的工作流、质量门禁�
 
 ## 翻译同步
 
-本地化刷新遵循 [.skills/translate-skill/SKILL.md](.skills/translate-skill/SKILL.md)，只同步并翻译用户可见内容，不把本仓库当作上游 Git 镜像。
+本地化刷新遵循 [.skills/translate-skill/SKILL.md](.skills/translate-skill/SKILL.md)，只同步并翻译用户可见内容，不把本仓库当作上游 Git 镜像。同步历史记录见 [SYNC.md](SYNC.md)，术语译法以 [TRANSLATION-GLOSSARY.md](TRANSLATION-GLOSSARY.md) 为唯一权威，翻译贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md#翻译贡献)。
 
+- 2026-10-18: 已同步上游 `addyosmani/agent-skills@aeac41d`（v0.6.13），本地同步提交 `5f4f74b`。plugin manifest bump 至 0.6.13；`performance-optimization` 与 `security-and-hardening` 重构为精简 SKILL.md + references 模式；`idea-refine` 对齐 skill anatomy；`interview-me`、`spec-driven-development`、`code-review-and-quality`、`test-driven-development` 等内容更新；新增 `docs/other-hosts.md`、skill-lint、floor-guard 参考测试与 hook 回归测试等基础设施。
 - 2026-05-09: 已同步上游 `addyosmani/agent-skills@4c585c3`，本地同步提交 `dbc2a47`。已包含完整公开 docs/setup/command metadata 的简体中文本地化。
 - 2026-09-13: 已同步上游 `addyosmani/agent-skills@be4e44a`，本地同步提交 `8899c97`。新增 `constraint-driven-development`、`interview-me`、`observability-and-instrumentation` 三个 skills，`/constraints`、`/webperf` 两个命令，`web-performance-auditor` persona，以及 Codex/Antigravity/Command Code 适配器、evals 和校验脚本；刷新全部 docs 与 skills 翻译。
 
@@ -43,6 +44,8 @@ Skills 会编码资深工程师构建软件时使用的工作流、质量门禁�
 | 审计 Web 性能 | `/webperf` | 先测量，再优化 |
 | 简化代码 | `/code-simplify` | 清晰优先于炫技 |
 | 发布到生产 | `/ship` | 越快越安全 |
+
+在 Claude Code 中，它们作为 plugin commands 安装。当某个内置命令同名时（如 `/review`），使用带命名空间的写法：`/agent-skills:review`。
 
 想在 spec 就绪后减少手动步骤？**`/build auto`** 会在一次获批的执行中生成 plan 并实现所有任务 —— 你只需批准一次 plan，之后它会自主运行。它去掉的是任务*之间*的人工介入，而不是验证：每个任务仍然是 test-driven 并单独提交，遇到失败或高风险步骤会暂停。
 
@@ -108,7 +111,7 @@ claude --plugin-dir /path/to/agent-skills
 <details>
 <summary><b>Cursor</b></summary>
 
-将 workflow skills 放在 `.cursor/skills/` 下（从 `agent-skills/skills/` 同步），把简短的 policies 放在 `.cursor/rules/*.mdc` —— 不要把完整 skills 粘贴到 rules 里。参见 [docs/cursor-setup.md](docs/cursor-setup.md)。
+将 workflow skills 放在 `.cursor/skills/` 下（从 `agent-skills/skills/` 同步），把简短的 policies 放在 `.cursor/rules/*.mdc` —— 不要把完整 skills 粘贴到 rules 里。两个目录都在**你自己的**项目里；本仓库不带 `.cursor/` 目录。参见 [docs/cursor-setup.md](docs/cursor-setup.md)。
 
 </details>
 
@@ -170,7 +173,7 @@ gemini skills install ./agent-skills/skills/
 <details>
 <summary><b>GitHub Copilot</b></summary>
 
-将 `agents/` 中的 agent definitions 用作 Copilot personas，并在 `.github/copilot-instructions.md` 中使用 skill 内容。参见 [docs/copilot-setup.md](docs/copilot-setup.md)。
+将 `agents/` 中的 agent definitions 用作 Copilot personas，并在 `.github/copilot-instructions.md` 中使用 skill 内容。lifecycle slash commands（`/spec`、`/plan`、`/build`、`/test`、`/review`、`/ship`）是 Claude Code commands，不会出现在 Copilot 中；请改用 skill 名称调用（`/spec-driven-development` 等）。参见 [docs/copilot-setup.md](docs/copilot-setup.md)。
 
 使用独立的 `copilot` CLI？可将它作为 plugin 安装 —— 参见 [docs/copilot-cli-setup.md](docs/copilot-cli-setup.md)。
 
@@ -213,7 +216,7 @@ cmd skills add vinvcn/addyosmani-agent-skills-zh -s spec-driven-development  # �
 <details>
 <summary><b>其他 Agents</b></summary>
 
-Skills 是普通 Markdown，适用于任何接受 system prompts 或 instruction files 的 agent。参见 [docs/getting-started.md](docs/getting-started.md)。
+Skills 是普通 Markdown，适用于任何接受 system prompts 或 instruction files 的 agent。参见 [docs/getting-started.md](docs/getting-started.md)。安装了本包但未在上方列出的 host 见 [docs/other-hosts.md](docs/other-hosts.md)。
 
 </details>
 
@@ -227,7 +230,7 @@ Skills 是普通 Markdown，适用于任何接受 system prompts 或 instruction
 
 ---
 
-## 全部 24 个 Skills
+## 全部 25 个 Skills
 
 上面的命令是入口点。这个包总共包含 25 个 skills —— 24 个生命周期 skills 加上 `using-agent-skills` 这个 meta-skill。每个 skill 都是带步骤、验证门禁和反合理化表格的结构化工作流。你也可以直接引用任意 skill。
 
@@ -368,7 +371,7 @@ Skills 在需要时会拉取的快速参考材料：
 | Antigravity CLI 适配器 | `commands/`（9 个命令）、`plugin.json` | 旧版 TOML wrappers 和根级 plugin manifest；见[已知 wrapper 限制](docs/antigravity-setup.md#lifecycle-workflows-与-command-兼容性) |
 | Codex 适配器 | `.codex-plugin/`、`.agents/plugins/` | Codex plugin metadata 和 marketplace 注册；Codex 直接消费 `skills/` |
 | GitHub Copilot CLI 适配器 | `plugin.json` | 根级 plugin metadata；Copilot CLI 按约定发现 `skills/`，不注册 lifecycle wrappers |
-| 贡献者工具 | `scripts/`（13 个脚本）、`evals/`（25 个 case 文件）、`.github/workflows/` | 校验、路由 evals 和 CI |
+| 贡献者工具 | `scripts/`（14 个脚本）、`evals/`（25 个 case 文件）、`evals/plugin/`（5 个 plugin eval）、`.github/workflows/` | 校验、路由 evals 和 CI |
 | 文档 | `docs/` | 通用指南和各工具 setup 指南 |
 
 没有 checked-in 适配器目录的工具，会把共享的 `skills/` 核心安装或复制到自己的原生位置。[快速开始](#快速开始)链接了每个受支持 host 的 setup 指南。
@@ -395,7 +398,7 @@ Skills 内置了来自 Google 工程文化的最佳实践，包括 [Software Eng
 
 Skills 应该是 **specific**（可执行步骤，而不是模糊建议）、**verifiable**（带证据要求的清晰退出标准）、**battle-tested**（基于真实工作流）和 **minimal**（只包含正确引导 agent 所需的内容）。
 
-格式规范见 [docs/skill-anatomy.md](docs/skill-anatomy.md)，贡献指南见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+格式规范见 [docs/skill-anatomy.md](docs/skill-anatomy.md)，贡献指南见 [CONTRIBUTING.md](CONTRIBUTING.md)，per-agent runtime 控制（model routing、tool 限制等，不破坏可移植 frontmatter）见 [docs/advanced-per-agent-configuration.md](docs/advanced-per-agent-configuration.md)。
 
 ---
 

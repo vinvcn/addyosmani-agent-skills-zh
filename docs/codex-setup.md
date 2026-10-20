@@ -32,4 +32,4 @@ codex plugin add agent-skills@agent-skills
 - `.agents/plugins/marketplace.json` — marketplace 条目，声明仓库根目录（`./`）为 plugin 来源。
 - `skills/<name>/SKILL.md` — 保持原样。Codex 和 Claude Code 共享同一套 `name` + `description` frontmatter 格式，一个文件同时服务两个平台。
 
-`.claude/commands/` 中的 slash commands、`agents/` 中的 personas，以及 `hooks/` 下的 lifecycle hook 仍然是 Claude Code 专属的。在 Codex 上，直接调用底层的 skill 来替代 slash command（例如用 `@spec-driven-development` 而不是 `/spec`）。
+`.claude/commands/` 中的 slash commands 和 `agents/` 中的 personas 仍然是 Claude Code 专属的。`hooks/` 下的 `SessionStart` 脚本是给没有原生 skill 路由的宿主用的独立 helper，两个 plugin 都不会接入它。在 Codex 上，直接调用底层的 skill 来替代 slash command（例如用 `@spec-driven-development` 而不是 `/spec`）。

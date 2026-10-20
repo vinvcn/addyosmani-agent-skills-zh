@@ -4,6 +4,8 @@
 
 **一次安装实际给你的东西：** skills。每个安装的 skill 会变成一个以其 frontmatter `name` 命名的 slash command —— `/spec-driven-development`、`/test-driven-development`，依此类推。`npx skills add vinvcn/addyosmani-agent-skills-zh` 和下面的手动复制方式都只安装 skills。这两条路径都不会复制本仓库简短的生命周期 wrappers（`/spec`、`/plan`、`/build`、`/test`、`/review`、`/ship`）—— 那些是住在 `.claude/commands/` 里的 Claude Code commands。请使用完整 skill 名，或自己添加别名 —— 见 [Lifecycle workflows](#lifecycle-workflows)。
 
+> **`/spec`、`/plan`、`/build`、`/test`、`/review`、`/code-simplify`、`/webperf` 和 `/ship` 从不会出现在 Copilot 中。** 它们是 Claude Code commands，而 Copilot 不读取 `.claude/commands/`。安装后看不到它们是预期行为，不是漏了哪一步。请改用 skill 自己的名字调用它们 —— `/spec` 用 `/spec-driven-development`，`/plan` 用 `/planning-and-task-breakdown`，依此类推；完整映射见 [Lifecycle Workflows](#lifecycle-workflows)。在 VS Code 上，如果你想要简短形式，可以自己添加[简短别名](#可选简短的-spec-风格别名)。
+
 ## 设置
 
 ### Copilot Instructions
@@ -144,6 +146,8 @@ EOF
 正文请自己写，或从上表取用，而不要逐字复制 `.claude/commands/*.md`：那些文件把 skills 引用为 `agent-skills:<name>`，这是 Claude Code 的 plugin namespace，对 Copilot 毫无意义。
 
 ### 如果 skill 的 slash commands 没有出现
+
+先排除预期情况：如果你唯一缺失的只是简短的生命周期 wrappers（`/spec`、`/plan`、`/build`、`/test`、`/review`、`/ship`），那没有任何问题 —— 它们是 Claude Code commands，从不会在 Copilot 中出现（见顶部提示）。下面这些步骤针对的是 skills 自己的名字（例如 `/spec-driven-development`）也缺失的情况。
 
 按顺序排查 —— `/spec-driven-development` 缺失和 `/spec` 缺失的原因不同：
 

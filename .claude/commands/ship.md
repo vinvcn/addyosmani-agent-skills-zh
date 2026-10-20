@@ -29,7 +29,7 @@ description: 通过并行 fan-out 到 specialist personas 运行发布前 checkl
 
 三个 reports 都返回后，main agent（不是 sub-persona）进行综合：
 
-1. **Code Quality** — 汇总 `code-reviewer` 的 Critical/Important findings，以及任何 failing tests、lint 或 build output。合并 reviewers 之间的重复项。
+1. **Code Quality** — 汇总 `code-reviewer` 的 Critical/Required findings，以及任何 failing tests、lint 或 build output。合并 reviewers 之间的重复项。
 2. **Security** — 将任何 Critical/High `security-auditor` findings 提升为 launch blockers。与 `code-reviewer` 的 security axis 交叉核对。
 3. **Performance** — 从 `code-reviewer` 的 performance axis 提取；如适用，交叉检查 Core Web Vitals。
 4. **Accessibility** — 验证 keyboard nav、screen reader support、contrast（三个 personas 不覆盖这一项；在这里直接处理，或调用 accessibility checklist）。
