@@ -87,7 +87,7 @@ cat /path/to/agent-skills/skills/code-review-and-quality/SKILL.md >> GEMINI.md
 - `browser-testing-with-devtools` 使用 `chrome-devtools` MCP extension。
 - `performance-optimization` 可以受益于性能相关的 MCP tools。
 
-要启用这些能力，请确保你的 Gemini CLI 配置（`~/.gemini/config.json`）中安装了相关 MCP extensions。
+要启用这些能力，请在 Gemini CLI 的 settings（`~/.gemini/settings.json`，或项目内的 `.gemini/settings.json`）里的 `mcpServers` 下配置相关 MCP servers。
 
 ### Session Hooks
 

@@ -9,9 +9,9 @@ Windsurf 使用 `.windsurfrules` 存放项目专属 agent instructions：
 ```bash
 # 用最重要的 skills 创建合并 rules 文件
 cat /path/to/agent-skills/skills/test-driven-development/SKILL.md > .windsurfrules
-echo "\n---\n" >> .windsurfrules
+printf '\n---\n\n' >> .windsurfrules
 cat /path/to/agent-skills/skills/incremental-implementation/SKILL.md >> .windsurfrules
-echo "\n---\n" >> .windsurfrules
+printf '\n---\n\n' >> .windsurfrules
 cat /path/to/agent-skills/skills/code-review-and-quality/SKILL.md >> .windsurfrules
 ```
 

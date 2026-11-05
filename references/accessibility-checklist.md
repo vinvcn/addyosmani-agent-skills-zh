@@ -31,7 +31,7 @@ WCAG 2.1 AA 合规的快速参考。配合 `frontend-ui-engineering` skill 使�
 - [ ] 表格有带 scope 的 `<th>` 表头
 
 ### 视觉
-- [ ] 文本对比度 ≥ 4.5:1（普通文本）或 ≥ 3:1（大文本，18px+）
+- [ ] 文本对比度：普通文本 ≥ 4.5:1，大文本 ≥ 3:1（至少 18pt / 24 CSS px；加粗时 14pt / 约 18.67 CSS px）。不要把未达标的对比度四舍五入到阈值。
 - [ ] UI 组件与背景的对比度 ≥ 3:1
 - [ ] 颜色不是传达信息的唯一方式
 - [ ] 文本可放大到 200% 且不破坏布局
@@ -71,7 +71,7 @@ WCAG 2.1 AA 合规的快速参考。配合 `frontend-ui-engineering` skill 使�
 
 ```html
 <!-- Explicit label association -->
-<label htmlFor="email">Email address</label>
+<label for="email">Email address</label>
 <input id="email" type="email" required />
 
 <!-- Implicit wrapping -->
@@ -104,7 +104,7 @@ WCAG 2.1 AA 合规的快速参考。配合 `frontend-ui-engineering` skill 使�
 </dialog>
 
 <!-- Loading states -->
-<div aria-busy="true" aria-label="Loading tasks">
+<div role="status" aria-busy="true" aria-label="Loading tasks">
   <Spinner />
 </div>
 ```
@@ -115,7 +115,7 @@ WCAG 2.1 AA 合规的快速参考。配合 `frontend-ui-engineering` skill 使�
 <ul role="list" aria-label="Tasks">
   <li>
     <input type="checkbox" id="task-1" aria-label="Complete: Buy groceries" />
-    <label htmlFor="task-1">Buy groceries</label>
+    <label for="task-1">Buy groceries</label>
   </li>
 </ul>
 ```
@@ -124,7 +124,7 @@ WCAG 2.1 AA 合规的快速参考。配合 `frontend-ui-engineering` skill 使�
 
 ```bash
 # Automated audit
-npx axe-core          # Programmatic accessibility testing
+npx --package=@axe-core/cli axe http://localhost:3000
 npx pa11y             # CLI accessibility checker
 
 # In browser

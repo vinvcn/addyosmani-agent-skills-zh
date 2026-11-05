@@ -137,6 +137,8 @@ JavaScript execution tool 会在页面上下文中运行代码。要约束其使
    └── Run automated tests
 ```
 
+调整视口或字体后，先等字体与 resize observer 稳定，再测量布局。
+
 ### 用于网络问题
 
 ```

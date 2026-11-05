@@ -196,7 +196,9 @@ unique constraint *就是*这个机制。无法在单个操作中强制唯一性
 
 ```typescript
 if (existing.requestHash !== hash(req.body)) {
-  return res.status(422).json({ error: 'idempotency key reused with a different payload' });
+  return res.status(422).json({
+    error: { code: 'IDEMPOTENCY_KEY_REUSED', message: 'Idempotency key reused with a different payload' },
+  });
 }
 ```
 

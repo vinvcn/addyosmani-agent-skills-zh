@@ -89,7 +89,7 @@ ASSUMPTIONS I'M MAKING:
    ```
    Build: npm run build
    Test: npm test -- --coverage
-   Lint: npm run lint --fix
+   Lint: npm run lint -- --fix
    Dev: npm run dev
    ```
 

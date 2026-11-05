@@ -1,6 +1,6 @@
 ---
 name: git-workflow-and-versioning
-description: 规范 git 工作流实践。用于进行任何代码变更时；用于提交、分支、解决冲突、把混乱 working tree 里未提交的工作拆成干净的 atomic commits、创建或审查 pull request（PR）、推送到远程，或需要组织多个并行工作流时。用于裁剪 release、选择语义化版本递增、打标签或编写 changelog 时。
+description: 规范 git 工作流实践。用于进行任何代码变更时；用于提交、分支、解决冲突、把混乱 working tree 里未提交的工作拆成干净的 atomic commits、创建或审查 pull request（PR）、推送到远程，或需要组织多个并行工作流时。用于裁剪 release、选择语义化版本递增、打标签或编写 changelog 时。用于被要求为某个变更编写 commit message 或 changelog 条目、或把变更拆成多次提交时，即使 diff 是直接粘贴的、看起来很容易据此写出消息。
 ---
 
 # Git 工作流和版本管理
@@ -216,8 +216,8 @@ POTENTIAL CONCERNS:
 # 1. Check what you're about to commit
 git diff --staged
 
-# 2. Ensure no secrets
-git diff --staged | grep -i "password\|secret\|api_key\|token"
+# 2. Ensure no secrets (lists matching file names only — any output means review them)
+git diff --staged -i -G'password|secret|api_key|token' --name-only
 
 # 3. Run tests
 npm test

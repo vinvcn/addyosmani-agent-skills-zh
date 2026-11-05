@@ -29,7 +29,7 @@ Web 应用安全的快速参考。配合 `security-and-hardening` skill 使用�
 
 ## 提交前检查
 
-- [ ] 代码中没有 secrets（`git diff --cached | grep -i "password\|secret\|api_key\|token"`）
+- [ ] 代码中没有 secrets（`git diff --cached -i -G'password|secret|api_key|token' --name-only` —— 只列出已暂存改动命中的文件名，不回显值本身；有任何输出都先复核那些文件再提交）
 - [ ] `.gitignore` 覆盖：`.env`、`.env.local`、`*.pem`、`*.key`
 - [ ] `.env.example` 使用占位值（不是真实 secrets）
 

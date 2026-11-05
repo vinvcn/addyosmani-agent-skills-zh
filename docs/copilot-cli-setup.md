@@ -37,10 +37,10 @@ copilot skill list    # the plugin's skills, alongside the built-in ones
 
 ## 你能得到什么、得不到什么
 
-根目录的 `plugin.json` 是 Copilot CLI 读取的 manifest —— 它的优先级高于属于 Claude Code 的 `.claude-plugin/plugin.json`。根 manifest 只声明了 name、version 和 description，因此各组件路径回落到默认值：
+根目录的 `plugin.json` 是 Copilot CLI 读取的 manifest。它的优先级高于属于 Claude Code 的 `.claude-plugin/plugin.json`。它的 `$schema` 行声明这是 [Agent Plugins 1.0.0](https://agent-plugins.org) manifest，会让 CLI 切换到 Agent Plugins 模式。manifest 没有设置组件路径，因此各组件路径回落到默认值：
 
-- **Skills —— 可用。** 没有显式路径时，CLI 使用约定的 `skills/` 目录，skills 在那里被发现。
-- **Lifecycle commands —— 不可用。** 根 manifest 没有 `commands` 字段，因此 `/spec`、`/plan`、`/build`、`/test`、`/review` 或 `/ship` 都不会注册。那些文件位于 `.claude/commands/`，是 Claude Code 的 commands。
+- **Skills：可用。** 没有显式路径时，CLI 使用约定的 `skills/` 目录，skills 在那里被发现。
+- **Lifecycle commands：不可用。** 在 Agent Plugins 模式下，CLI 只从 `com.github.copilot/commands/` 读取 commands，而本仓库没有这个目录，因此 `/spec`、`/plan`、`/build`、`/test`、`/review` 或 `/ship` 都不会注册。那些文件位于 `.claude/commands/`，是 Claude Code 的 commands。
 
 关于 manifest 优先级和各组件路径的默认值，参见 [CLI plugin reference](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-plugin-reference) 和 [Creating plugins](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/plugins-creating)。
 
@@ -59,6 +59,6 @@ copilot skill list    # the plugin's skills, alongside the built-in ones
 | 症状 | 检查什么 |
 |---------|---------------|
 | `plugin install` 无法解析 `agent-skills@addy-agent-skills` | 先运行 `copilot plugin marketplace add vinvcn/addyosmani-agent-skills-zh` —— 该 marketplace 注册后这个名字才能解析。或者直接安装仓库。 |
-| Plugin 装了但没有 skills | 用 `copilot plugin list` 确认 plugin，再用 `copilot skill list`（或 session 内的 `/skills list`）查看发现了什么。 |
+| Plugin 装了但没有 skills | 用 `copilot plugin list` 确认 plugin，再用 `copilot skill list`（或 session 内的 `/skills list`）查看发现了什么。如果列表为空，对照 [1.0.0 schema](https://agent-plugins.org/schemas/1.0.0/plugin.schema.json) 检查根 `plugin.json`：在 Agent Plugins 模式下，任何 schema 错误（比如把 `author` 写成字符串而不是对象）都是致命的，CLI 不会加载任何 skills。 |
 | 找不到 `/spec`、`/build` 等命令 | 这是预期行为，不是安装坏了：根 manifest 没有注册任何 commands。改为点名 skill。 |
 | 本地改了 skills 但 CLI 还显示旧副本 | 开一个新 session，或用 `--plugin-dir` 指向你的 clone 运行。 |

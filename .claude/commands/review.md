@@ -1,5 +1,6 @@
 ---
 description: 执行五轴 code review — correctness、readability、architecture、security、performance
+disable-model-invocation: true
 ---
 
 调用 agent-skills:code-review-and-quality skill。
