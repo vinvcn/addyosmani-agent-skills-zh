@@ -1,5 +1,6 @@
 ---
 description: 通过并行 fan-out 到 specialist personas 运行发布前 checklist，然后综合 go/no-go decision
+disable-model-invocation: true
 ---
 
 调用 agent-skills:shipping-and-launch skill。

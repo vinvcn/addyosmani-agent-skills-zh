@@ -4,11 +4,13 @@
 
 ## 最新同步
 
-`addyosmani/agent-skills@aeac41d`（v0.6.13）于 2026-10-18。
+`addyosmani/agent-skills@8bfcc1f`（v0.6.15）于 2026-11-05。
 
 提醒：每次同步上游 release 导致 `.claude-plugin/plugin.json`、`.codex-plugin/plugin.json`、`plugin.json` 等 manifest 版本变化时，要把本地化仓库的对应 manifest 一并 bump 到同一版本号（保留本地化 description），并用 `node scripts/validate-versions.js` 确认一致。
 
 ## 同步记录
+
+- 2026-11-05：已同步 `addyosmani/agent-skills@8bfcc1f`（v0.6.15），本地同步 commit `a228997`。覆盖 v0.6.14 与 v0.6.15：修正二十余处示例（Lighthouse CI、axe、Playwright、Jest、Vitest coverage、gitleaks、Idempotency、事务回滚等）；`constraint-driven-development` 新增 `scripts/quality-gate.mjs`，让 Semgrep/axe 的 high/critical 发现真正失败；暂存密钥扫描改为只列文件名；`context-engineering` 的压缩阈值改为随 host 而异；9 个 lifecycle commands 加 `disable-model-invocation`；plugin manifest 对齐 Agent Plugins 1.0.0；新增 git-workflow 与 code-simplification 的触发词段落及配套 evals。
 
 - 2026-10-18：已同步 `addyosmani/agent-skills@aeac41d`（v0.6.13）：plugin manifest bump 至 0.6.13；`performance-optimization` 与 `security-and-hardening` 重构为精简 SKILL.md + references 模式（新增 `references/optimization-patterns.md`、`references/hardening-patterns.md`）；`idea-refine` 对齐到 skill anatomy（新增 Overview/When to Use/Common Rationalizations）；`interview-me` 新增 Step 6 终止回合规则、`spec-driven-development` 新增写完 spec 即停止规则；`code-review-and-quality`、`test-driven-development` description 扩展；`documentation-and-adrs` 新增「文字审阅」小节、`frontend-ui-engineering` 新增「参考驱动的 UI 质量」小节；新增 `docs/other-hosts.md`，以及 skill-lint、floor-guard 参考测试、hook 回归测试等基础设施（原样复制）；本地同步 commit `5f4f74b`。
 - 2026-09-14：已同步 `addyosmani/agent-skills@be4e44a`（v0.6.9），本地同步 commit `8899c97`。新增 `constraint-driven-development`、`interview-me`、`observability-and-instrumentation` 三个 skills，`/constraints`、`/webperf` 两个命令，`web-performance-auditor` persona，以及 Codex/Antigravity/Command Code 适配器、evals 和校验脚本；刷新全部 docs 与 skills 翻译。后续 `436ef84` 补记同步版本号，`4af1427` 将 plugin manifest 对齐到上游 0.6.9，`1987d02` 修复翻译标题后的 anchor 链接。

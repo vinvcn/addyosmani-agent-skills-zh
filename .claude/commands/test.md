@@ -1,5 +1,6 @@
 ---
 description: 运行 TDD workflow — 编写失败测试、实现、验证。对于 bugs，使用 Prove-It pattern。
+disable-model-invocation: true
 ---
 
 调用 agent-skills:test-driven-development skill。

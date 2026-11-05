@@ -1,5 +1,6 @@
 ---
 description: 简化代码以提升清晰度和可维护性 — 在不改变行为的前提下降低复杂度
+disable-model-invocation: true
 ---
 
 调用 agent-skills:code-simplification skill。

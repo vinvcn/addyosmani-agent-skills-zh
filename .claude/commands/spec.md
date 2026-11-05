@@ -1,5 +1,6 @@
 ---
 description: 启动 spec-driven development — 写代码前先编写结构化 specification
+disable-model-invocation: true
 ---
 
 调用 agent-skills:spec-driven-development skill。

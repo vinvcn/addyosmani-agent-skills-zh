@@ -1,5 +1,6 @@
 ---
 description: 定义并执行本项目质量标准 — 访谈、合理默认值、CONSTRAINTS.md
+disable-model-invocation: true
 ---
 
 调用 agent-skills:constraint-driven-development skill。

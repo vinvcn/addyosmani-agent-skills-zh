@@ -107,7 +107,9 @@ Plugin 会从 `agents/` 目录注册可复用的 subagent 定义：
 ## 配置与定制
 
 ### 项目级强制约束（`AGENTS.md`）
-要强制执行严格的 skill 合规（例如写代码前必须先有 spec 或 plan），把 `AGENTS.md` 复制或链接到你的 workspace 根目录。Antigravity CLI 会读取这个文件，让 agent 的行为和 planning 阶段对齐团队约定。
+要强制执行严格的 skill 合规（例如写代码前必须先有 spec 或 plan），在你的 workspace 根目录创建一个项目专属的 `AGENTS.md`。在那里写明项目约定、测试命令，以及必须遵循的 skill 工作流。
+
+本仓库根目录的 `AGENTS.md` 和 `CLAUDE.md` 是为 Agent Skills 本身做贡献的 agents 准备的配置。不要把它们复制或链接到你的项目或全局 agent 配置中；可复用的资产是 `skills/` 里的 skills。参见[仓库级文件](../CONTRIBUTING.md#仓库级文件)。
 
 ### Sandbox 模式
 如果你想以受限的终端权限运行 skills 或脚本（在跑第三方验证测试时更安全），用以下方式启动 CLI：

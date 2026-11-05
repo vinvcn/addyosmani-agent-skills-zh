@@ -1,5 +1,6 @@
 ---
 description: 将工作拆解为带 acceptance criteria 和 dependency ordering 的小型可验证 tasks
+disable-model-invocation: true
 ---
 
 调用 agent-skills:planning-and-task-breakdown skill。

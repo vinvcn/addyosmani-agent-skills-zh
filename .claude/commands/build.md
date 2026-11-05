@@ -1,5 +1,6 @@
 ---
 description: 增量实现任务 — build、test、verify、commit。加上 "auto" 可在一次获批的执行中跑完整个 plan
+disable-model-invocation: true
 ---
 
 同时调用 agent-skills:incremental-implementation skill 和 agent-skills:test-driven-development。

@@ -65,6 +65,11 @@ const clean = DOMPurify.sanitize(userInput);
 // Always check authorization, not just authentication
 app.patch('/api/tasks/:id', authenticate, async (req, res) => {
   const task = await taskService.findById(req.params.id);
+  if (!task) {
+    return res.status(404).json({
+      error: { code: 'NOT_FOUND', message: 'Task not found' }
+    });
+  }
 
   // Check that the authenticated user owns this resource
   if (task.ownerId !== req.user.id) {
@@ -288,8 +293,10 @@ if (!success) return res.status(429).end();
 
 **提交前务必检查：**
 ```bash
-# Check for accidentally staged secrets
-git diff --cached | grep -i "password\|secret\|api_key\|token"
+# Check for accidentally staged secrets — prints only the names of files whose
+# staged diff matches, so the raw value never lands in terminal output or agent
+# tool logs. Any output means review those files before committing.
+git diff --cached -i -G'password|secret|api_key|token' --name-only
 ```
 
 **如果一个 secret 已经被提交，立刻轮换它。** 删掉那一行或重写 history 都不够 —— 只要它到达过 remote 就当作已泄露。先吊销并重新签发 key，再从 history 中清除它。

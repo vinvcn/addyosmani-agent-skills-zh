@@ -28,8 +28,10 @@ description: 通过结构化的发散与收敛思考，把原始想法打磨成�
 这个 skill 主要是一段互动式对话。带着一个想法调用它，agent 会引导你完成整个过程。
 
 ```bash
-# Optional: Initialize the ideas directory
-bash skills/idea-refine/scripts/idea-refine.sh
+# Optional. Run from the project root so this creates ./docs/ideas.
+# <skill-dir> is the directory that contains this SKILL.md
+# (for example .agents/skills/idea-refine or .cursor/skills/idea-refine).
+bash <skill-dir>/scripts/idea-refine.sh
 ```
 
 ## 输出

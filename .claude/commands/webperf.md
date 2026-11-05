@@ -1,5 +1,6 @@
 ---
 description: 通过 web-performance-auditor persona 运行 web 性能审计
+disable-model-invocation: true
 ---
 
 `/webperf` 专门面向 web 应用。不要把它用于 utility libraries、CLIs，或没有浏览器端产物的 server-only 代码。

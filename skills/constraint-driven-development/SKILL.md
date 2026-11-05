@@ -113,11 +113,11 @@ Last reviewed: 2026-08-08 by @addy
 |-----------|------|-----------|---------|
 | Types | Zero type errors | `tsc --noEmit` | every edit |
 | Lint | Zero errors from our config | `biome check` | every edit |
-| Secrets | No secrets in source | `gitleaks detect --redact` | every edit |
+| Secrets | No secrets in source | `gitleaks dir . --redact` | every edit |
 | Coverage | Changed lines ≥ 80% covered | `vitest run --coverage` + git diff | task end, CI |
-| Security: code | No high findings | `semgrep scan --config p/default` | CI |
+| Security: code | Nothing at high or above | `npm run check:security` | CI |
 | Security: deps | Nothing at high or above | `osv-scanner scan source -r .` | CI |
-| Accessibility | Zero critical or serious | `axe $PREVIEW_URL --tags wcag2a,wcag2aa,wcag21aa` | preview deploy |
+| Accessibility | Zero critical or serious | `npm run check:a11y` | preview deploy |
 | Performance | LCP ≤ 2500ms, CLS ≤ 0.1 | `lighthouse $PREVIEW_URL --output=json` | preview deploy |
 
 Every row names the command that produces the verdict. A dimension with a
@@ -148,14 +148,14 @@ number and no command in this column is an aspiration, not a constraint.
 | 类型 (TS) | tsc | 已内置 | `tsc --noEmit` | 任何错误 |
 | 类型 (Python) | mypy | `pip install mypy` | `mypy .` | 任何错误 |
 | Lint | 你已有的配置 | 已内置 | `eslint .` / `biome check` / `ruff check` | 任何错误 |
-| 覆盖率 (JS) | 你的 test runner | 已内置 | `vitest run --coverage`（或 `jest --coverage`） | 变更行的覆盖率 |
+| 覆盖率 (JS) | 你的 test runner | Vitest：`npm i -D @vitest/coverage-v8`；Jest：已内置 | `vitest run --coverage`（或 `jest --coverage`） | 变更行的覆盖率 |
 | 覆盖率 (Python) | pytest-cov | `pip install pytest-cov` | `pytest --cov --cov-report=lcov` | 同上 |
-| Security: 代码 | Semgrep | `pipx install semgrep` | `semgrep scan --config p/default --config p/owasp-top-ten` | 任何 high finding |
-| Security: secrets | gitleaks | `brew install gitleaks` | `gitleaks detect --redact --no-banner` | 任何 finding |
+| Security: 代码 | Semgrep | `pipx install semgrep` | `npm run check:security`（见下） | high 或 critical，含旧版 `ERROR` |
+| Security: secrets | gitleaks | `brew install gitleaks` | `gitleaks dir . --redact --no-banner` | 任何 finding |
 | Security: 依赖 | osv-scanner | `brew install osv-scanner` | `osv-scanner scan source -r .` | high 及以上 |
 | 性能: 页面 | Lighthouse | `npm i -D lighthouse` | `lighthouse $URL --output=json --quiet` | LCP、CLS、performance score |
 | 性能: bundle | size-limit | `npm i -D size-limit` | `size-limit --json` | 每个 entry 的字节预算 |
-| 无障碍性 | axe-core | `npm i -D @axe-core/cli` | `axe $URL --tags wcag2a,wcag2aa,wcag21aa` | critical 或 serious 为零 |
+| 无障碍性 | axe-core | `npm i -D @axe-core/cli` | `npm run check:a11y`（见下） | critical 或 serious 为零 |
 | 架构 | dependency-cruiser | `npm i -D dependency-cruiser` | `depcruise --validate src` | 任何违规 |
 | 断言质量 | Stryker | `npm i -D @stryker-mutator/core` | `stryker run --mutate <changed files>` | mutation score |
 
@@ -167,19 +167,25 @@ number and no command in this column is an aspiration, not a constraint.
 4. **覆盖率不需要第二次 test run。** 读你的套件已经在写的 lcov，把它和 `git diff` 求交集。为了拿一个数字而把套件跑两遍，是让人最快开始憎恨这件事的办法。
 5. **Semgrep 注册表里的规则可以免费运行；再分发之前先看 licence。** 如果这关系到你的法务团队，`opengrep` 是一个 drop-in fork，规则格式和 JSON output 相同。
 
+`semgrep scan` 和 `axe` 在发现 findings 时仍可能以 0 退出；把 [scripts/quality-gate.mjs](scripts/quality-gate.mjs) 复制到项目的 `scripts/` 目录，用它在这些阈值上执行拦截。把 scanner 放在 `&&` 之前，这样扫描失败会中止命令。
+
 把每一个都加进项目自己的 script，让它在没有 agent 的情况下也可复现：
 
 ```json
 {
   "scripts": {
-    "check:fast": "tsc --noEmit && eslint . && gitleaks detect --redact --no-banner",
+    "check:fast": "tsc --noEmit && eslint . && gitleaks dir . --redact --no-banner",
     "check:task": "npm run check:fast && vitest run --coverage",
-    "check:full": "npm run check:task && semgrep scan --config p/default && osv-scanner scan source -r ."
+    "check:security": "semgrep scan --config p/default --strict --json > semgrep-results.json && node scripts/quality-gate.mjs semgrep semgrep-results.json",
+    "check:a11y": "axe \"$PREVIEW_URL\" --tags wcag2a,wcag2aa,wcag21aa --stdout > axe-results.json && node scripts/quality-gate.mjs axe axe-results.json",
+    "check:full": "npm run check:task && npm run check:security && osv-scanner scan source -r ."
   }
 }
 ```
 
-这个映射比工具本身更重要。`check:fast` 是每次编辑之后运行的，`check:task` 是 agent 自以为完成时运行的，`check:full` 在 CI 里运行。
+这个映射比工具本身更重要。`check:fast` 是每次编辑之后运行的，`check:task` 是 agent 自以为完成时运行的，`check:full` 在 CI 里运行。在 preview 可访问之后再跑 `check:a11y`，并设置 `PREVIEW_URL`（示例使用 POSIX shell 语法）。
+
+在声称任何一行已被强制执行之前，拿一条已知违规和一条干净对照跑一遍它真正的 CI 命令。确认违规失败、对照通过、scanner 报错也会失败。有严重度阈值时，再确认低于阈值的 finding 能通过。每个维度都要这样做，包括覆盖率和 Lighthouse：只生成报告并不会强制 `CONSTRAINTS.md` 里的那个数字。
 
 这些命令现在住在两个地方——`CONSTRAINTS.md` 的 `Checked by` 列，和这些 scripts。`CONSTRAINTS.md` 是权威来源：它把理由随每条命令一起承载，而且它会出现在 review 里。这些 scripts 是必须与它保持一致的便捷包装，不是第二个权威来源；一旦漂移，以文件为准。
 
@@ -300,6 +306,7 @@ Agent 不会精心构造巧妙的漏洞。它们撞上一个红色检查，然�
 - [ ] 例外有 owner 和到期日
 - [ ] `AGENTS.md` 或 `CLAUDE.md` 指向这个文件
 - [ ] 在当前分支上试运行一次，没有用户不认可的失败
+- [ ] 每条被强制执行的命令都在故意违规和 scanner 报错时失败、在干净对照上通过，并保持约定的严重度阈值
 
 ## 另见
 

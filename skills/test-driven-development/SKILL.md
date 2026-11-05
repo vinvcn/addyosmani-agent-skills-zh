@@ -245,6 +245,8 @@ Preference order (most to least preferred):
 
 **只在这些情况下使用 mocks：** 真实实现太慢、非确定性，或有你无法控制的副作用（外部 API、发送邮件）。过度 mocking 会制造测试通过但生产破损的情况。
 
+对于崩溃或回滚行为，要触达真实边界：注入的异常不等于进程终止，mock 的事务调用也不等于数据库回滚。
+
 ### 使用 Arrange-Act-Assert 模式
 
 ```typescript

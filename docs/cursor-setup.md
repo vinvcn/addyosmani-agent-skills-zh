@@ -17,7 +17,7 @@ Cursor 同时支持 **rules**（简短的 policy）和 **skills**（完整工作
 | **User rules** | Cursor Settings → Rules | 账号级 policy |
 | **User skills**（可选） | `~/.cursor/skills/` | 在所有 workspace 可用的全局 skills |
 
-文档：[Rules](https://docs.cursor.com/context/rules) · [Skills](https://docs.cursor.com/context/skills)（URL 可能随 Cursor 更新文档而重定向）。
+文档：[Rules](https://cursor.com/docs/rules) · [Skills](https://cursor.com/docs/skills)。
 
 ### Rules vs skills
 

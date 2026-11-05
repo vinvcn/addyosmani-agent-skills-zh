@@ -199,8 +199,8 @@ Lighthouse Performance score: ≥ 90
 # Bundle size check
 npx bundlesize --config bundlesize.config.json
 
-# Lighthouse CI
-npx lhci autorun
+# Lighthouse CI. The CLI package is @lhci/cli; unscoped `lhci` on npm is not it.
+npx --package=@lhci/cli lhci autorun
 ```
 
 ## 另请参阅
