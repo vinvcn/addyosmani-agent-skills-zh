@@ -28,9 +28,9 @@ description: 通过结构化的发散与收敛思考，把原始想法打磨成�
 这个 skill 主要是一段互动式对话。带着一个想法调用它，agent 会引导你完成整个过程。
 
 ```bash
-# 可选。在项目根目录运行，这样会在 ./docs/ideas 下创建目录。
-# <skill-dir> 是包含本 SKILL.md 的目录
-#（例如 .agents/skills/idea-refine 或 .cursor/skills/idea-refine）。
+# Optional. Run from the project root so this creates ./docs/ideas.
+# <skill-dir> is the directory that contains this SKILL.md
+# (for example .agents/skills/idea-refine or .cursor/skills/idea-refine).
 bash <skill-dir>/scripts/idea-refine.sh
 ```
 

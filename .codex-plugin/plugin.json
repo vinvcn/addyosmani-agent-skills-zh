@@ -13,7 +13,7 @@
   "interface": {
     "displayName": "Agent Skills",
     "shortDescription": "面向 AI coding agents 的资深工程师工作流：spec、plan、build、test、review、ship。",
-    "longDescription": "Agent Skills 打包了来自 Addy Osmani 的 24 个生产级工程工作流，覆盖需求、规划、实现、测试、审查和发布。",
+    "longDescription": "Agent Skills 打包了来自 Addy Osmani 的 25 个生产级工程工作流，覆盖需求、规划、实现、测试、审查和发布。",
     "developerName": "Addy Osmani",
     "category": "Productivity",
     "capabilities": [

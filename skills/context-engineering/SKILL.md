@@ -50,7 +50,7 @@ description: 优化 agent 上下文设置。当开始新会话、agent 输出质
 ## Commands
 - Build: `npm run build`
 - Test: `npm test`
-- Lint: `npm run lint --fix`
+- Lint: `npm run lint -- --fix`
 - Dev: `npm run dev`
 - Type check: `npx tsc --noEmit`
 
@@ -321,7 +321,7 @@ PLAN:
 | 缺少示例 | Agent 发明一种新风格而不是沿用你的风格 | 包含一个要遵循的模式示例 |
 | 隐性知识 | Agent 不知道项目专属规则 | 写进 rules 文件：没写下来的，就等于不存在 |
 | 沉默的困惑 | Agent 在该提问时猜测 | 使用上面的困惑管理模式，显式呈现歧义 |
-| 上下文悬崖 | 等到窗口装满才管理：注意力碎片化，输出质量在极限处骤降 | 尽早压缩到 host 上限之前；用压缩替代硬砍 |
+| 上下文悬崖 | 等到窗口装满才管理：注意力碎片化，输出质量在极限处骤降 | 在 host 上限之前尽早压缩；用压缩替代硬砍 |
 
 ## 常见合理化借口
 

@@ -15,5 +15,8 @@
     "./agents/security-auditor.md",
     "./agents/test-engineer.md",
     "./agents/web-performance-auditor.md"
-  ]
+  ],
+  "experimental": {
+    "evals": "evals/plugin"
+  }
 }
